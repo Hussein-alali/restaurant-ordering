@@ -144,9 +144,6 @@ function MenuPage() {
           }}
         >
           <span style={{ fontStyle: 'italic', fontWeight: 300 }}>tavola</span>
-          <span className="font-mono text-muted align-super ml-1.5" style={{ fontSize: 13 }}>
-            /ˈtaː.vo.la/
-          </span>
         </div>
         <p className="text-sm text-ink-body leading-relaxed mt-3 max-w-xs">
           The table, delivered. A neighborhood trattoria, brought home in{' '}
