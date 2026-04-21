@@ -4,33 +4,20 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ['"Plus Jakarta Sans"', 'sans-serif'],
-        body: ['Inter', 'sans-serif'],
+        display: ['Fraunces', 'serif'],
+        sans: ['"Work Sans"', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       },
       colors: {
-        brand: {
-          primary: '#ac2d00',
-          dark: '#7c2d12',
-          cream: '#fbf9f4',
-          card: '#f5f3ee',
-          input: '#e4e2dd',
-          text: '#1b1c19',
-          muted: '#5b4139',
-        },
-      },
-      keyframes: {
-        slideIn: {
-          from: { transform: 'translateX(100%)' },
-          to: { transform: 'translateX(0)' },
-        },
-        fadeIn: {
-          from: { opacity: '0' },
-          to: { opacity: '1' },
-        },
-      },
-      animation: {
-        'slide-in': 'slideIn 0.3s ease-out',
-        'fade-in': 'fadeIn 0.2s ease-out',
+        paper: '#fbf6ec',
+        'paper-deep': '#f3ead8',
+        ink: '#1f1813',
+        'ink-body': '#5a4a3e',
+        muted: '#8a7a6b',
+        rule: '#e6dac1',
+        terra: '#b8391a',
+        'terra-deep': '#8a2810',
+        ochre: '#c48b3a',
       },
     },
   },

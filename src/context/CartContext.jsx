@@ -4,6 +4,7 @@ const CartContext = createContext(null)
 
 const initialState = {
   items: [],
+  serviceType: 'Delivery',
   customer: {
     name: '',
     phone: '',
@@ -59,6 +60,8 @@ function cartReducer(state, action) {
         items: [],
         lastOrder: state.lastOrder,
       }
+    case 'SET_SERVICE_TYPE':
+      return { ...state, serviceType: action.payload }
     case 'SET_CUSTOMER':
       return {
         ...state,
@@ -99,11 +102,14 @@ export function calculateTotal(items) {
 }
 
 export function formatPayload(cartState) {
-  const addressParts = [cartState.customer.address, cartState.customer.building].filter(Boolean)
+  const { serviceType, customer } = cartState
+  const addressParts = [customer.address, customer.building].filter(Boolean)
+  const address = serviceType === 'Delivery' ? addressParts.join(', ') : serviceType
   return {
-    customerName: cartState.customer.name,
-    phone: cartState.customer.phone,
-    address: addressParts.join(', '),
+    customerName: customer.name,
+    phone: customer.phone,
+    serviceType,
+    address,
     items: cartState.items.map(item => ({
       id: item.id,
       name: item.name,
@@ -111,16 +117,16 @@ export function formatPayload(cartState) {
       price: item.price,
     })),
     totalPrice: calculateTotal(cartState.items),
-    deliveryNotes: cartState.customer.deliveryNotes,
+    deliveryNotes: customer.deliveryNotes,
     timestamp: new Date().toISOString(),
   }
 }
 
-export function validateForm(data) {
+export function validateForm(data, serviceType = 'Delivery') {
   const errors = {}
   if (!data.name?.trim()) errors.name = 'Name is required'
   if (!data.phone?.trim()) errors.phone = 'Phone is required'
-  else if (!/^\+?[\d\s-]{10,}$/.test(data.phone)) errors.phone = 'Invalid phone format'
-  if (!data.address?.trim()) errors.address = 'Address is required'
+  else if (!/^\+?[\d\s\-().]{7,}$/.test(data.phone)) errors.phone = 'Invalid phone format'
+  if (serviceType === 'Delivery' && !data.address?.trim()) errors.address = 'Address is required'
   return errors
 }

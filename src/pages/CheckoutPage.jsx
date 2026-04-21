@@ -1,20 +1,84 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useCart, calculateTotal, formatPayload, validateForm } from '../context/CartContext'
 
 const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL || 'https://your-n8n-instance.com/webhook/restaurant-order'
 
-function ArrowRightIcon({ className }) {
+function StepDots({ step }) {
+  const steps = ['address', 'pay']
   return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-    </svg>
+    <div className="flex items-center gap-3 py-3.5">
+      {steps.map((label, i) => {
+        const n = i + 1
+        const done = n < step
+        const active = n === step
+        return (
+          <div key={label} className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <div
+                className="flex items-center justify-center rounded-full text-xs"
+                style={{
+                  width: 22,
+                  height: 22,
+                  border: `1.5px solid ${done ? '#b8391a' : active ? '#1f1813' : '#e6dac1'}`,
+                  background: done ? '#b8391a' : 'transparent',
+                  color: done ? '#fff' : active ? '#1f1813' : '#8a7a6b',
+                  fontFamily: done ? 'Work Sans, sans-serif' : 'Fraunces, serif',
+                  fontStyle: active ? 'italic' : 'normal',
+                  fontWeight: 500,
+                }}
+              >
+                {done ? '✓' : n}
+              </div>
+              <span
+                className="font-mono text-[10px] tracking-[1.5px] uppercase"
+                style={{ color: done ? '#b8391a' : active ? '#1f1813' : '#8a7a6b' }}
+              >
+                {label}
+              </span>
+            </div>
+            {i < steps.length - 1 && (
+              <div
+                className="h-px w-8 ml-1"
+                style={{ background: done ? '#b8391a' : '#e6dac1' }}
+              />
+            )}
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
-function SpinnerIcon({ className }) {
+function Field({ label, value, onChange, type = 'text', placeholder, error, optional }) {
   return (
-    <svg className={className} fill="none" viewBox="0 0 24 24">
+    <div className="mb-4">
+      <div className="font-mono text-[9px] text-muted tracking-[1.5px] uppercase mb-1.5">
+        {label}{optional && <span className="ml-1 normal-case tracking-normal opacity-60">optional</span>}
+      </div>
+      <div
+        className="rounded-2xl border px-4 py-3.5"
+        style={{
+          background: '#fff',
+          borderColor: error ? '#b8391a' : '#e6dac1',
+        }}
+      >
+        <input
+          type={type}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full text-[15px] text-ink bg-transparent outline-none placeholder-muted"
+        />
+      </div>
+      {error && <p className="font-mono text-[10px] text-terra mt-1">{error}</p>}
+    </div>
+  )
+}
+
+function SpinnerIcon() {
+  return (
+    <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>
@@ -24,210 +88,270 @@ function SpinnerIcon({ className }) {
 function CheckoutPage() {
   const { state, dispatch } = useCart()
   const navigate = useNavigate()
+  const [step, setStep] = useState(1)
   const [errors, setErrors] = useState({})
   const [status, setStatus] = useState('idle')
 
   const total = calculateTotal(state.items)
-  const cartCount = state.items.reduce((sum, item) => sum + item.quantity, 0)
+  const itemCount = state.items.reduce((s, i) => s + i.quantity, 0)
+  const serviceType = state.serviceType
+  const isDelivery = serviceType === 'Delivery'
 
   const updateCustomer = (field, value) => {
     dispatch({ type: 'SET_CUSTOMER', payload: { [field]: value } })
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: null }))
-    }
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }))
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    const formData = {
+  const handleStep1Continue = () => {
+    const errs = validateForm({
       name: state.customer.name,
       phone: state.customer.phone,
       address: state.customer.address,
-    }
-    
-    const validationErrors = validateForm(formData)
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors)
+    }, serviceType)
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs)
       return
     }
+    setStep(2)
+  }
 
+  const handlePlaceOrder = async () => {
     setStatus('loading')
-
     const payload = formatPayload(state)
-
     try {
       const res = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      
-      dispatch({ type: 'SET_LAST_ORDER', payload: payload })
+      dispatch({ type: 'SET_LAST_ORDER', payload })
       dispatch({ type: 'CLEAR_CART' })
       navigate('/confirmation')
-    } catch (err) {
-      console.error('Order submission failed:', err)
+    } catch {
       setStatus('error')
     }
   }
 
   if (state.items.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto px-6 py-20">
-        <div className="flex flex-col items-center justify-center text-center">
-          <h2 className="font-display text-[#1b1c19] text-2xl font-bold mb-2">Your cart is empty</h2>
-          <p className="text-[#5b4139] text-sm mb-6">Add items from the menu first.</p>
-          <Link to="/" className="px-6 py-3 bg-[#ac2d00] hover:bg-[#8f2500] text-white font-bold rounded-lg transition-colors">
-            Browse Menu
-          </Link>
+      <div className="max-w-xl mx-auto px-5 pt-16 pb-32 flex flex-col items-center text-center">
+        <div
+          className="text-ink mb-3"
+          style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 42, fontWeight: 400, letterSpacing: '-1px', lineHeight: 1 }}
+        >
+          nothing here.
         </div>
+        <p className="text-sm text-ink-body mb-8">Add items from the menu first.</p>
+        <button
+          onClick={() => navigate('/')}
+          className="px-6 py-3 rounded-2xl bg-ink text-paper text-sm font-semibold"
+        >
+          browse the menu →
+        </button>
       </div>
     )
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
-      <section className="mb-10">
-        <p className="text-[#ac2d00] text-[11px] font-medium uppercase tracking-[2.2px] mb-3">CHECKOUT</p>
-        <h1 className="font-display text-[#1b1c19] text-4xl sm:text-5xl font-bold leading-tight tracking-tight">
-          Delivery Details
-        </h1>
-      </section>
+    <div className="max-w-xl mx-auto px-5" style={{ paddingBottom: 120 }}>
+      {/* Header */}
+      <div className="pt-16 pb-2 flex items-center justify-between">
+        <button
+          onClick={() => (step === 1 ? navigate('/cart') : setStep(1))}
+          className="font-mono text-[10px] text-muted tracking-[2px] uppercase"
+        >
+          ← {step === 1 ? 'cart' : 'address'}
+        </button>
+        <div className="font-mono text-[10px] text-terra tracking-[2px]">step {step}/2</div>
+      </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-[#f5f3ee] rounded-2xl p-6">
-            <h2 className="font-display text-[#1b1c19] text-xl font-bold mb-6">Customer Information</h2>
-            <div className="space-y-5">
-              <div>
-                <label className="block text-[#5b4139] text-xs font-semibold uppercase tracking-wider mb-2">Full Name</label>
-                <input
-                  type="text"
-                  value={state.customer.name}
-                  onChange={(e) => updateCustomer('name', e.target.value)}
-                  placeholder="Enter your full name"
-                  className={`w-full bg-[#e4e2dd] rounded-lg px-4 py-3.5 text-[#1b1c19] placeholder-[#a8a29e] focus:outline-none focus:ring-2 ${errors.name ? 'focus:ring-red-500' : 'focus:ring-[#ac2d00]/25'}`}
-                />
-                {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+      <StepDots step={step} />
+
+      {/* Step 1 — Customer details */}
+      {step === 1 && (
+        <>
+          <div
+            className="text-ink pb-5 pt-2"
+            style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontWeight: 400, fontSize: 36, letterSpacing: '-0.8px', lineHeight: 1 }}
+          >
+            {isDelivery ? 'where to?' : 'your details.'}
+          </div>
+
+          {/* Service type context hint */}
+          {!isDelivery && (
+            <div className="mb-4 rounded-2xl px-4 py-3 border border-rule" style={{ background: '#f3ead8' }}>
+              <div className="font-mono text-[9px] text-terra tracking-[1.5px] uppercase mb-0.5">
+                {serviceType === 'Dine-in' ? '◆ dining in' : '◆ takeaway'}
               </div>
-              <div>
-                <label className="block text-[#5b4139] text-xs font-semibold uppercase tracking-wider mb-2">Phone Number</label>
-                <input
-                  type="tel"
-                  value={state.customer.phone}
-                  onChange={(e) => updateCustomer('phone', e.target.value)}
-                  placeholder="+1 (555) 000-0000"
-                  className={`w-full bg-[#e4e2dd] rounded-lg px-4 py-3.5 text-[#1b1c19] placeholder-[#a8a29e] focus:outline-none focus:ring-2 ${errors.phone ? 'focus:ring-red-500' : 'focus:ring-[#ac2d00]/25'}`}
-                />
-                {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+              <div className="text-sm text-ink-body">
+                {serviceType === 'Dine-in'
+                  ? 'Your order will be prepared and served at the table.'
+                  : 'Your order will be ready for pickup in 20 minutes.'}
               </div>
-              <div>
-                <label className="block text-[#5b4139] text-xs font-semibold uppercase tracking-wider mb-2">Street Address</label>
-                <input
-                  type="text"
-                  value={state.customer.address}
-                  onChange={(e) => updateCustomer('address', e.target.value)}
-                  placeholder="Street address"
-                  className={`w-full bg-[#e4e2dd] rounded-lg px-4 py-3.5 text-[#1b1c19] placeholder-[#a8a29e] focus:outline-none focus:ring-2 ${errors.address ? 'focus:ring-red-500' : 'focus:ring-[#ac2d00]/25'}`}
-                />
-                {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
+            </div>
+          )}
+
+          <Field
+            label="Full name"
+            value={state.customer.name}
+            onChange={v => updateCustomer('name', v)}
+            placeholder="Your full name"
+            error={errors.name}
+          />
+          <Field
+            label="Phone"
+            value={state.customer.phone}
+            onChange={v => updateCustomer('phone', v)}
+            type="tel"
+            placeholder="+1 (555) 000-0000"
+            error={errors.phone}
+          />
+          {isDelivery && (
+            <>
+              <Field
+                label="Street address"
+                value={state.customer.address}
+                onChange={v => updateCustomer('address', v)}
+                placeholder="228 Mercer Street"
+                error={errors.address}
+              />
+              <Field
+                label="Building / Floor"
+                value={state.customer.building}
+                onChange={v => updateCustomer('building', v)}
+                placeholder="Apt 4B, Floor 3…"
+                optional
+              />
+            </>
+          )}
+          <Field
+            label={isDelivery ? 'Notes to the driver' : 'Special requests'}
+            value={state.customer.deliveryNotes}
+            onChange={v => updateCustomer('deliveryNotes', v)}
+            placeholder={isDelivery ? 'Leave at door · buzzer 4B…' : 'Allergies, preferences…'}
+            optional
+          />
+        </>
+      )}
+
+      {/* Step 2 — Review & pay */}
+      {step === 2 && (
+        <>
+          <div
+            className="text-ink pb-5 pt-2"
+            style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontWeight: 400, fontSize: 36, letterSpacing: '-0.8px', lineHeight: 1 }}
+          >
+            review & pay.
+          </div>
+
+          {/* Payment method */}
+          <div className="mb-5">
+            <div className="font-mono text-[9px] text-muted tracking-[1.5px] uppercase mb-2">Payment</div>
+            <div
+              className="rounded-2xl border px-4 py-3.5 flex items-center justify-between"
+              style={{ background: '#fff', borderColor: '#1f1813' }}
+            >
+              <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 16, color: '#1f1813' }}>
+                Cash on delivery
               </div>
-              <div>
-                <label className="block text-[#5b4139] text-xs font-semibold uppercase tracking-wider mb-2">Building / Floor (Optional)</label>
-                <input
-                  type="text"
-                  value={state.customer.building}
-                  onChange={(e) => updateCustomer('building', e.target.value)}
-                  placeholder="Building name, floor, apartment number"
-                  className="w-full bg-[#e4e2dd] rounded-lg px-4 py-3.5 text-[#1b1c19] placeholder-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ac2d00]/25"
-                />
-              </div>
-              <div>
-                <label className="block text-[#5b4139] text-xs font-semibold uppercase tracking-wider mb-2">Delivery Notes (Optional)</label>
-                <textarea
-                  value={state.customer.deliveryNotes}
-                  onChange={(e) => updateCustomer('deliveryNotes', e.target.value)}
-                  placeholder="Building, floor, instructions..."
-                  rows={3}
-                  className="w-full bg-[#e4e2dd] rounded-lg px-4 py-3.5 text-[#1b1c19] placeholder-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ac2d00]/25 resize-none"
-                />
-              </div>
+              <div
+                className="rounded-full"
+                style={{ width: 18, height: 18, background: '#1f1813', border: '1.5px solid #1f1813' }}
+              />
             </div>
           </div>
 
-          <div className="bg-[#f5f3ee] rounded-2xl p-6">
-            <h2 className="font-display text-[#1b1c19] text-xl font-bold mb-6">Order Items</h2>
-            <div className="space-y-4">
+          {/* Order items */}
+          <div className="mb-5">
+            <div className="font-mono text-[9px] text-ochre tracking-[2px] uppercase mb-3">— your order —</div>
+            <div
+              className="rounded-2xl p-4"
+              style={{ background: '#f3ead8' }}
+            >
               {state.items.map(item => (
-                <div key={item.id} className="flex justify-between items-center">
-                  <div>
-                    <span className="text-[#1b1c19] font-medium">{item.name}</span>
-                    <span className="text-[#5b4139] text-sm ml-2">x{item.quantity}</span>
-                  </div>
-                  <span className="text-[#1b1c19]">${(item.price * item.quantity).toFixed(2)}</span>
+                <div key={item.id} className="flex justify-between py-1.5 text-sm text-ink-body">
+                  <span>
+                    {item.name}
+                    <span className="text-muted ml-1.5">×{item.quantity}</span>
+                  </span>
+                  <span className="text-ink">${(item.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
+              <div className="border-t border-rule mt-2 pt-3 flex justify-between">
+                <div className="font-mono text-[9px] text-muted tracking-[1.5px] uppercase">Delivery</div>
+                <div className="text-sm text-terra italic">complimentary</div>
+              </div>
+              <div className="mt-2 flex items-baseline justify-between">
+                <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 18, color: '#1f1813' }}>
+                  total
+                </div>
+                <div style={{ fontFamily: 'Fraunces, serif', fontSize: 26, fontWeight: 500, color: '#1f1813', letterSpacing: '-0.6px' }}>
+                  ${total.toFixed(2)}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="lg:col-span-1">
-          <div className="bg-[#f5f3ee] rounded-2xl p-6 sticky top-24">
-            <h2 className="font-display text-[#1b1c19] text-xl font-bold mb-6">Payment</h2>
-            <div className="mb-6">
-              <label className="flex items-center gap-3 p-4 border-2 border-[#ac2d00] rounded-lg bg-[#ac2d00]/10">
-                <input type="radio" name="payment" defaultChecked className="w-4 h-4 text-[#ac2d00]" />
-                <span className="text-[#1b1c19] font-medium">Cash on Delivery</span>
-              </label>
+          {/* Customer summary */}
+          <div className="mb-5">
+            <div className="font-mono text-[9px] text-muted tracking-[1.5px] uppercase mb-2">
+              {isDelivery ? 'Delivering to' : serviceType}
             </div>
-            <div className="space-y-3 mb-6">
-              <div className="flex justify-between">
-                <span className="text-[#5b4139]">Subtotal ({cartCount} items)</span>
-                <span className="text-[#1b1c19] font-medium">${total.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#5b4139]">Delivery</span>
-                <span className="text-[#ac2d00]">Complimentary</span>
-              </div>
-              <div className="border-t border-[#e4e2dd] pt-3 flex justify-between">
-                <span className="font-display text-[#1b1c19] font-bold">Total</span>
-                <span className="font-display text-[#ac2d00] text-2xl font-bold">${total.toFixed(2)}</span>
-              </div>
+            <div className="text-sm text-ink-body leading-relaxed">
+              <div className="font-medium text-ink">{state.customer.name}</div>
+              <div>{state.customer.phone}</div>
+              {isDelivery && (
+                <div>{[state.customer.address, state.customer.building].filter(Boolean).join(', ')}</div>
+              )}
+              {state.customer.deliveryNotes && (
+                <div className="text-muted italic mt-0.5">{state.customer.deliveryNotes}</div>
+              )}
             </div>
-
-            {status === 'error' ? (
-              <button
-                type="button"
-                onClick={() => setStatus('idle')}
-                className="w-full py-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg"
-              >
-                Try Again
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={status === 'loading'}
-                className="w-full py-4 bg-[#ac2d00] hover:bg-[#8f2500] disabled:opacity-40 text-white font-bold rounded-lg flex items-center justify-center gap-3"
-              >
-                {status === 'loading' ? (
-                  <>
-                    <SpinnerIcon className="w-5 h-5 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    Confirm Order
-                    <ArrowRightIcon className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            )}
           </div>
+
+          {status === 'error' && (
+            <div className="mb-4 rounded-2xl border border-terra/40 bg-terra/5 px-4 py-3">
+              <p className="font-mono text-[11px] text-terra">
+                Couldn't reach the kitchen. Check your connection and try again.
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Bottom CTA */}
+      <div className="fixed left-0 right-0 bottom-0 z-50 px-4 pb-8">
+        <div className="max-w-xl mx-auto flex gap-3">
+          {step === 2 && (
+            <button
+              onClick={() => setStep(1)}
+              className="rounded-2xl border border-ink px-5 py-4 text-sm font-semibold text-ink"
+            >
+              back
+            </button>
+          )}
+          <button
+            onClick={step === 1 ? handleStep1Continue : handlePlaceOrder}
+            disabled={status === 'loading'}
+            className="flex-1 flex items-center justify-between rounded-2xl px-5 py-4 shadow-2xl disabled:opacity-50"
+            style={{ background: '#1f1813' }}
+          >
+            <div className="text-sm text-[#c9b39a]">
+              {step === 1 ? `${itemCount} ${itemCount === 1 ? 'dish' : 'dishes'}` : `$${total.toFixed(2)} · tonight`}
+            </div>
+            <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 17, color: '#fbf6ec', display: 'flex', alignItems: 'center', gap: 8 }}>
+              {status === 'loading' ? (
+                <SpinnerIcon />
+              ) : step === 1 ? (
+                'continue →'
+              ) : (
+                'place order →'
+              )}
+            </div>
+          </button>
         </div>
-      </form>
+      </div>
     </div>
   )
 }

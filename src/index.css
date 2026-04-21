@@ -12,9 +12,9 @@
   }
 
   body {
-    font-family: 'Inter', sans-serif;
-    background-color: #fbf9f4;
-    color: #1b1c19;
+    font-family: 'Work Sans', sans-serif;
+    background-color: #fbf6ec;
+    color: #1f1813;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -34,9 +34,5 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
-  }
-
-  .font-display {
-    font-family: 'Plus Jakarta Sans', sans-serif;
   }
 }
