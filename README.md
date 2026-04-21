@@ -1,217 +1,178 @@
-# Restaurant Ordering System, Minimal Architecture
+# Tavola — Restaurant Ordering App
 
-A lightweight web system for browsing a restaurant menu, placing orders, and sending instant notifications to the owner via WhatsApp. The system avoids a traditional backend and runs with a React frontend and an n8n automation workflow.
+A mobile-first restaurant ordering web app built with React. Customers browse the menu, build an order, choose a service type, enter their details, and submit — the owner receives an instant WhatsApp notification via n8n and the WhatsApp Cloud API. No backend server, no database.
+
+**Live demo:** https://hussein-alali.github.io/restaurant-ordering/
 
 ---
 
-## Overview
+## How it works
 
-This project focuses on simplicity and low cost.
+```
+Customer (React app) → POST order → n8n Webhook → WhatsApp Cloud API → Owner's WhatsApp
+```
 
-Architecture:
+1. Customer browses the menu and adds items to cart
+2. Selects service type: Delivery, Dine-in, or Takeaway
+3. Enters name, phone, and address (delivery only)
+4. Reviews order and confirms
+5. n8n receives the payload, validates it, formats a message, and sends it to the owner's WhatsApp
 
-* React frontend handles UI and order creation
-* n8n handles webhook, validation, and message automation
-* WhatsApp Cloud API delivers order notifications to the owner
+---
 
-No server, no database, no third-party messaging providers.
+## Tech stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, React Router v7, Tailwind CSS v3 |
+| Build | Vite |
+| Automation | n8n |
+| Notifications | WhatsApp Business Cloud API (Meta) |
+| Hosting | GitHub Pages |
 
 ---
 
 ## Features
 
-Frontend:
-
-* Responsive restaurant menu
-* Add, remove, and update cart items
-* Live total price calculation
-* Customer and delivery form
-* Order summary before submission
-
-System:
-
-* HTTP POST request to webhook
-* Order validation inside n8n
-* Automatic message formatting
-* Instant WhatsApp notification to owner
+- **Menu** — items with photos, category filter (Antipasti · Mains · Dolci · Bevande), and search
+- **Service toggle** — Delivery, Dine-in, Takeaway (adapts checkout form and order payload)
+- **Cart** — quantity controls, item removal, live total
+- **Checkout** — 2-step form: customer details → review & pay
+- **Confirmation** — order summary with estimated time based on service type
+- **WhatsApp notification** — owner receives a formatted message the moment an order is placed
 
 ---
 
-## Architecture
+## Project structure
 
-Flow:
-
-User → React App → n8n Webhook → WhatsApp Cloud API → Owner
-
-Details:
-
-1. User selects items from menu
-2. User enters delivery details
-3. React sends order payload to webhook
-4. n8n validates and formats message
-5. n8n sends request to Meta Graph API
-6. Owner receives order on WhatsApp
-
----
-
-## Tech Stack
-
-Frontend:
-
-* React
-* JavaScript
-* CSS
-
-Automation:
-
-* n8n
-
-Messaging:
-
-* WhatsApp Business Cloud API
+```
+src/
+├── components/
+│   └── Layout.jsx            # Root layout with Outlet
+├── context/
+│   └── CartContext.jsx       # useReducer cart + customer state, utility functions
+├── data/
+│   └── menu.js              # Static menu items (15 dishes, 4 categories)
+├── pages/
+│   ├── MenuPage.jsx         # Browse, filter, search, add to cart
+│   ├── CartPage.jsx         # Review cart, adjust quantities
+│   ├── CheckoutPage.jsx     # 2-step checkout wizard
+│   └── ConfirmationPage.jsx # Order confirmed + timeline
+```
 
 ---
 
-## Project Structure
+## Order payload
 
-Frontend (React):
-
-* components/
-
-  * MenuList
-  * MenuItem
-  * Cart
-  * CartItem
-  * CustomerForm
-  * OrderSummary
-* pages/
-
-  * MenuPage
-  * CartPage
-  * CheckoutPage
-  * ConfirmationPage
-* utils/
-
-  * calculateTotal.js
-  * formatPayload.js
-  * validateForm.js
-
----
-
-## Order Payload Example
+Sent as a JSON POST to the n8n webhook on order submission:
 
 ```json
 {
-  "customerName": "Hussein",
-  "phone": "201234567890",
-  "address": "Cairo, Nasr City, Street 10",
+  "customerName": "Amara Okafor",
+  "phone": "+1 (415) 555-0142",
+  "serviceType": "Delivery",
+  "address": "228 Mercer Street, Apt 4B",
   "items": [
-    { "id": 1, "name": "Pizza", "quantity": 2, "price": 120 },
-    { "id": 2, "name": "Burger", "quantity": 1, "price": 80 }
+    { "id": 1, "name": "Bruschetta al Pomodoro", "quantity": 2, "price": 9.99 },
+    { "id": 5, "name": "Ribeye Steak", "quantity": 1, "price": 42.99 }
   ],
-  "totalPrice": 320,
-  "deliveryNotes": "No onions",
-  "timestamp": "2026-04-21T15:30:00Z"
+  "totalPrice": 62.97,
+  "deliveryNotes": "Leave at door",
+  "timestamp": "2026-04-21T19:30:00.000Z"
 }
+```
+
+`serviceType` is `"Delivery"`, `"Dine-in"`, or `"Takeaway"`. For non-delivery orders, `address` is set to the service type string.
+
+---
+
+## Local setup
+
+```bash
+git clone https://github.com/Hussein-alali/restaurant-ordering.git
+cd restaurant-ordering
+npm install
+cp .env.example .env   # add your n8n webhook URL
+npm run dev            # → http://localhost:5173
+```
+
+### Environment variable
+
+```env
+VITE_WEBHOOK_URL=https://your-n8n-instance.app/webhook/restaurant-order
 ```
 
 ---
 
-## n8n Workflow
+## n8n workflow
 
-Nodes:
+Import `n8n-workflow.json` into your n8n instance. The workflow has 7 nodes:
 
-1. Webhook
+| Node | Type | Purpose |
+|------|------|---------|
+| Receive Order | Webhook | Accepts POST at `/webhook/restaurant-order` |
+| Validate Order | IF | Checks `customerName`, `phone`, and `items` are present |
+| Reject Invalid | Respond | Returns 400 if validation fails |
+| Format Message | Code | Builds the WhatsApp message text |
+| Send WhatsApp | HTTP Request | Calls Meta Graph API |
+| Respond Success | Respond | Returns 200 to the frontend |
+| Respond API Error | Respond | Returns 500 if WhatsApp call fails |
 
-   * Receives POST request from frontend
+### n8n environment variables
 
-2. Function / Set Node
+Set these in n8n → Settings → Environment Variables:
 
-   * Validates required fields
-   * Formats message
-
-3. HTTP Request Node
-
-   * Sends message to WhatsApp API
+| Variable | Value |
+|----------|-------|
+| `WHATSAPP_ACCESS_TOKEN` | Permanent system user token from Meta |
+| `WHATSAPP_PHONE_NUMBER_ID` | Numeric phone number ID from Meta dashboard |
+| `OWNER_PHONE_NUMBER` | Owner's WhatsApp number in E.164 without `+` (e.g. `966501234567`) |
 
 ---
 
-## WhatsApp API Configuration
+## WhatsApp Cloud API setup
 
-Endpoint:
+1. Go to [developers.facebook.com](https://developers.facebook.com) → Create App → Business → add WhatsApp product
+2. Under **WhatsApp → API Setup**, copy the Phone Number ID and generate a permanent system user token
+3. Add your number as a test recipient and send a test message to verify
+4. Paste credentials into n8n environment variables
 
-[https://graph.facebook.com/v21.0/YOUR_PHONE_NUMBER_ID/messages](https://graph.facebook.com/v21.0/YOUR_PHONE_NUMBER_ID/messages)
+The API is free for up to 1,000 conversations/month.
 
-Headers:
+---
 
-* Authorization: Bearer YOUR_ACCESS_TOKEN
-* Content-Type: application/json
+## GitHub Pages deployment
 
-Example Request Body:
+The `docs/` folder contains the production build and is served by GitHub Pages from the `main` branch → `/docs` folder.
 
-```json
-{
-  "messaging_product": "whatsapp",
-  "to": "201XXXXXXXXX",
-  "type": "text",
-  "text": {
-    "body": "New Order:\n\nName: Hussein\nPhone: 201234567890\nItems:\n- Pizza x2\n- Burger x1\nTotal: 320 EGP"
-  }
-}
+**To deploy an update:**
+
+```bash
+npm run build   # outputs to docs/
+git add docs/
+git commit -m "rebuild"
+git push
 ```
 
----
-
-## Setup Instructions
-
-1. Frontend
-
-* Install dependencies
-* Run React app
-* Configure webhook URL
-
-2. n8n
-
-* Create webhook node
-* Add validation logic
-* Add HTTP request node
-
-3. WhatsApp Cloud API
-
-* Create Meta developer app
-* Get access token
-* Get phone number ID
-* Set recipient number (owner)
-
----
-
-## Constraints
-
-* No backend server
-* No database
-* No Twilio or external messaging services
-* One-way messaging only (owner notifications)
+A GitHub Actions workflow (`.github/workflows/deploy.yml`) also triggers automatically on every push to `main` if you switch the Pages source to **GitHub Actions** in the repo settings.
 
 ---
 
 ## Cost
 
-* Hosting: around $5 per month
-* Messaging: free within WhatsApp Cloud API free tier
+| Service | Cost |
+|---------|------|
+| React hosting (GitHub Pages) | Free |
+| WhatsApp Cloud API | Free up to 1,000 conversations/month |
+| n8n Cloud Starter | ~$20/month — or self-host on a $5 VPS |
 
 ---
 
-## Future Improvements
+## Future extensions
 
-* Database integration for orders
-* Payment gateway
-* Admin dashboard
-* Order tracking system
-* Customer notifications
-* Menu management panel
-
----
-
-## Goal
-
-Deliver a clean MVP for real-world restaurant usage with minimal complexity, fast setup, and low operational cost.
+- API-driven menu (replace static `menu.js` with Supabase or Airtable)
+- Customer confirmation message via WhatsApp template
+- Order history with a database node in n8n
+- Payment integration (Stripe link in checkout)
+- Admin dashboard for menu management
+- Real-time order tracking
