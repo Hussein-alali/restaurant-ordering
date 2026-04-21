@@ -1,0 +1,193 @@
+{
+  "name": "Restaurant Order → WhatsApp Cloud API",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Receive Order",
+      "type": "n8n-nodes-base.webhook",
+      "position": [240, 300],
+      "typeVersion": 1.1,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "restaurant-order",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      }
+    },
+    {
+      "id": "2",
+      "name": "Validate Order",
+      "type": "n8n-nodes-base.if",
+      "position": [460, 300],
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "check-name",
+              "leftValue": "={{ $json.body.customerName }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            },
+            {
+              "id": "check-phone",
+              "leftValue": "={{ $json.body.phone }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            },
+            {
+              "id": "check-items",
+              "leftValue": "={{ $json.body.items.length }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "3",
+      "name": "Reject Invalid",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [680, 440],
+      "typeVersion": 1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Missing required fields: customer name, phone, or items.' }) }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "4",
+      "name": "Format Message",
+      "type": "n8n-nodes-base.code",
+      "position": [680, 160],
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const body = $input.first().json.body;\nconst { customerName, phone, address, items, totalPrice, deliveryNotes, timestamp } = body;\n\nconst time = new Date(timestamp).toLocaleString('en-US', {\n  dateStyle: 'medium',\n  timeStyle: 'short',\n  timeZone: 'UTC'\n});\n\nconst itemLines = items\n  .map(i => `  • ${i.quantity}x ${i.name}  $${(Number(i.price) * Number(i.quantity)).toFixed(2)}`)\n  .join('\\n');\n\nconst messageParts = [\n  '🍽️ *NEW ORDER*',\n  `Time: ${time} UTC`,\n  '',\n  '👤 *Customer*',\n  `Name: ${customerName}`,\n  `Phone: ${phone}`,\n  `Address: ${address}`,\n];\n\nif (deliveryNotes) messageParts.push(`Notes: ${deliveryNotes}`);\n\nmessageParts.push('', '📦 *Items*', itemLines, '', `💰 *Total: $${Number(totalPrice).toFixed(2)}*`);\n\nconst message = messageParts.join('\\n');\nconst orderId = 'ORD-' + Date.now();\n\nreturn [{ json: { message, orderId } }];"
+      }
+    },
+    {
+      "id": "5",
+      "name": "Send WhatsApp (Cloud API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [920, 160],
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WHATSAPP_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $env.OWNER_PHONE_NUMBER, type: 'text', text: { preview_url: false, body: $json.message } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "6",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [1160, 160],
+      "typeVersion": 1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, orderId: $('Format Message').first().json.orderId, message: 'Order received. Owner notified via WhatsApp.' }) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "7",
+      "name": "Respond API Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [1160, 300],
+      "typeVersion": 1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Order received but WhatsApp notification failed. Check your WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID.' }) }}",
+        "options": {
+          "responseCode": 500,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Receive Order": {
+      "main": [
+        [{ "node": "Validate Order", "type": "main", "index": 0 }]
+      ]
+    },
+    "Validate Order": {
+      "main": [
+        [{ "node": "Format Message", "type": "main", "index": 0 }],
+        [{ "node": "Reject Invalid", "type": "main", "index": 0 }]
+      ]
+    },
+    "Format Message": {
+      "main": [
+        [{ "node": "Send WhatsApp (Cloud API)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send WhatsApp (Cloud API)": {
+      "main": [
+        [{ "node": "Respond Success", "type": "main", "index": 0 }],
+        [{ "node": "Respond API Error", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "tags": ["restaurant", "whatsapp", "cloud-api", "ordering"]
+}
