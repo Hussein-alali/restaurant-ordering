@@ -4,84 +4,47 @@ import { useCart, calculateTotal, formatPayload, validateForm } from '../context
 
 const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL || 'https://your-n8n-instance.com/webhook/restaurant-order'
 
-function StepDots({ step }) {
-  const steps = ['address', 'pay']
-  return (
-    <div className="flex items-center gap-3 py-3.5">
-      {steps.map((label, i) => {
-        const n = i + 1
-        const done = n < step
-        const active = n === step
-        return (
-          <div key={label} className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5">
-              <div
-                className="flex items-center justify-center rounded-full text-xs"
-                style={{
-                  width: 22,
-                  height: 22,
-                  border: `1.5px solid ${done ? '#b8391a' : active ? '#1f1813' : '#e6dac1'}`,
-                  background: done ? '#b8391a' : 'transparent',
-                  color: done ? '#fff' : active ? '#1f1813' : '#8a7a6b',
-                  fontFamily: done ? 'Work Sans, sans-serif' : 'Fraunces, serif',
-                  fontStyle: active ? 'italic' : 'normal',
-                  fontWeight: 500,
-                }}
-              >
-                {done ? '✓' : n}
-              </div>
-              <span
-                className="font-mono text-[10px] tracking-[1.5px] uppercase"
-                style={{ color: done ? '#b8391a' : active ? '#1f1813' : '#8a7a6b' }}
-              >
-                {label}
-              </span>
-            </div>
-            {i < steps.length - 1 && (
-              <div
-                className="h-px w-8 ml-1"
-                style={{ background: done ? '#b8391a' : '#e6dac1' }}
-              />
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
+const C = {
+  red:        '#a8160c',
+  redDeep:    '#7a0d05',
+  yellow:     '#f4b528',
+  yellowSoft: '#fde6a8',
+  bg:         '#f5ece0',
+  card:       '#ffffff',
+  ink:        '#1a0e08',
+  body:       '#5b4636',
+  muted:      '#9a8674',
+  rule:       '#ead8bf',
 }
+
+const ar = { fontFamily: '"Cairo", "Noto Naskh Arabic", system-ui, sans-serif' }
+const disp = { fontFamily: '"Rubik", "Cairo", system-ui, sans-serif' }
+const egp = (n) => `${n} ج.م`
 
 function Field({ label, value, onChange, type = 'text', placeholder, error, optional }) {
   return (
-    <div className="mb-4">
-      <div className="font-mono text-[9px] text-muted tracking-[1.5px] uppercase mb-1.5">
-        {label}{optional && <span className="ml-1 normal-case tracking-normal opacity-60">optional</span>}
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 6 }}>
+        {label}{optional && <span style={{ fontSize: 10, opacity: 0.7, marginRight: 4 }}>— اختياري</span>}
       </div>
-      <div
-        className="rounded-2xl border px-4 py-3.5"
-        style={{
-          background: '#fff',
-          borderColor: error ? '#b8391a' : '#e6dac1',
-        }}
-      >
+      <div style={{
+        borderRadius: 12, border: `1.5px solid ${error ? C.red : C.rule}`,
+        background: C.card, padding: '12px 14px',
+      }}>
         <input
           type={type}
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full text-[15px] text-ink bg-transparent outline-none placeholder-muted"
+          dir="auto"
+          style={{
+            width: '100%', fontSize: 15, color: C.ink, background: 'transparent',
+            border: 'none', outline: 'none', fontFamily: 'inherit',
+          }}
         />
       </div>
-      {error && <p className="font-mono text-[10px] text-terra mt-1">{error}</p>}
+      {error && <p style={{ fontSize: 11, color: C.red, fontWeight: 700, marginTop: 4 }}>{error}</p>}
     </div>
-  )
-}
-
-function SpinnerIcon() {
-  return (
-    <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-    </svg>
   )
 }
 
@@ -93,9 +56,9 @@ function CheckoutPage() {
   const [status, setStatus] = useState('idle')
 
   const total = calculateTotal(state.items)
-  const itemCount = state.items.reduce((s, i) => s + i.quantity, 0)
+  const delivery = 15
   const serviceType = state.serviceType
-  const isDelivery = serviceType === 'Delivery'
+  const isDelivery = serviceType === 'توصيل'
 
   const updateCustomer = (field, value) => {
     dispatch({ type: 'SET_CUSTOMER', payload: { [field]: value } })
@@ -108,10 +71,7 @@ function CheckoutPage() {
       phone: state.customer.phone,
       address: state.customer.address,
     }, serviceType)
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs)
-      return
-    }
+    if (Object.keys(errs).length > 0) { setErrors(errs); return }
     setStep(2)
   }
 
@@ -135,222 +95,162 @@ function CheckoutPage() {
 
   if (state.items.length === 0) {
     return (
-      <div className="max-w-xl mx-auto px-5 pt-16 pb-32 flex flex-col items-center text-center">
-        <div
-          className="text-ink mb-3"
-          style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 42, fontWeight: 400, letterSpacing: '-1px', lineHeight: 1 }}
-        >
-          nothing here.
-        </div>
-        <p className="text-sm text-ink-body mb-8">Add items from the menu first.</p>
-        <button
-          onClick={() => navigate('/')}
-          className="px-6 py-3 rounded-2xl bg-ink text-paper text-sm font-semibold"
-        >
-          browse the menu →
+      <div dir="rtl" style={{ ...ar, background: C.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 24px', textAlign: 'center' }}>
+        <div style={{ ...disp, fontSize: 22, fontWeight: 900, color: C.ink, marginBottom: 8 }}>مفيش طلبات</div>
+        <p style={{ fontSize: 14, color: C.body, marginBottom: 24 }}>أضف أصناف من القائمة أولاً</p>
+        <button onClick={() => navigate('/')} style={{ background: C.red, color: '#fff', border: 'none', borderRadius: 14, padding: '14px 28px', fontSize: 15, fontWeight: 800, cursor: 'pointer' }}>
+          ← القائمة
         </button>
       </div>
     )
   }
 
   return (
-    <div className="max-w-xl mx-auto px-5" style={{ paddingBottom: 120 }}>
+    <div dir="rtl" style={{ background: C.bg, minHeight: '100vh', ...ar }}>
       {/* Header */}
-      <div className="pt-16 pb-2 flex items-center justify-between">
+      <div style={{
+        padding: '54px 18px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        background: C.red, color: '#fff',
+      }}>
         <button
-          onClick={() => (step === 1 ? navigate('/cart') : setStep(1))}
-          className="font-mono text-[10px] text-muted tracking-[2px] uppercase"
+          onClick={() => step === 1 ? navigate('/cart') : setStep(1)}
+          style={{
+            width: 38, height: 38, borderRadius: 19, background: 'rgba(255,255,255,0.18)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer',
+          }}
         >
-          ← {step === 1 ? 'cart' : 'address'}
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
-        <div className="font-mono text-[10px] text-terra tracking-[2px]">step {step}/2</div>
+        <div style={{ fontSize: 17, fontWeight: 900 }}>{step === 1 ? 'بيانات التوصيل' : 'مراجعة الطلب'}</div>
+        <div style={{ fontSize: 12, color: C.yellowSoft, fontWeight: 700 }}>خطوة {step} / ٢</div>
       </div>
 
-      <StepDots step={step} />
-
-      {/* Step 1 — Customer details */}
-      {step === 1 && (
-        <>
-          <div
-            className="text-ink pb-5 pt-2"
-            style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontWeight: 400, fontSize: 36, letterSpacing: '-0.8px', lineHeight: 1 }}
-          >
-            {isDelivery ? 'where to?' : 'your details.'}
-          </div>
-
-          {/* Service type context hint */}
-          {!isDelivery && (
-            <div className="mb-4 rounded-2xl px-4 py-3 border border-rule" style={{ background: '#f3ead8' }}>
-              <div className="font-mono text-[9px] text-terra tracking-[1.5px] uppercase mb-0.5">
-                {serviceType === 'Dine-in' ? '◆ dining in' : '◆ takeaway'}
-              </div>
-              <div className="text-sm text-ink-body">
-                {serviceType === 'Dine-in'
-                  ? 'Your order will be prepared and served at the table.'
-                  : 'Your order will be ready for pickup in 20 minutes.'}
-              </div>
+      {/* Step dots */}
+      <div style={{ padding: '16px 18px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+        {[1, 2].map((n, i) => (
+          <div key={n} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: n < step ? C.red : n === step ? C.ink : 'transparent',
+              border: `1.5px solid ${n <= step ? (n < step ? C.red : C.ink) : C.rule}`,
+              color: n <= step ? '#fff' : C.muted, fontSize: 12, fontWeight: 700,
+            }}>
+              {n < step ? '✓' : n}
             </div>
-          )}
-
-          <Field
-            label="Full name"
-            value={state.customer.name}
-            onChange={v => updateCustomer('name', v)}
-            placeholder="Your full name"
-            error={errors.name}
-          />
-          <Field
-            label="Phone"
-            value={state.customer.phone}
-            onChange={v => updateCustomer('phone', v)}
-            type="tel"
-            placeholder="+1 (555) 000-0000"
-            error={errors.phone}
-          />
-          {isDelivery && (
-            <>
-              <Field
-                label="Street address"
-                value={state.customer.address}
-                onChange={v => updateCustomer('address', v)}
-                placeholder="228 Mercer Street"
-                error={errors.address}
-              />
-              <Field
-                label="Building / Floor"
-                value={state.customer.building}
-                onChange={v => updateCustomer('building', v)}
-                placeholder="Apt 4B, Floor 3…"
-                optional
-              />
-            </>
-          )}
-          <Field
-            label={isDelivery ? 'Notes to the driver' : 'Special requests'}
-            value={state.customer.deliveryNotes}
-            onChange={v => updateCustomer('deliveryNotes', v)}
-            placeholder={isDelivery ? 'Leave at door · buzzer 4B…' : 'Allergies, preferences…'}
-            optional
-          />
-        </>
-      )}
-
-      {/* Step 2 — Review & pay */}
-      {step === 2 && (
-        <>
-          <div
-            className="text-ink pb-5 pt-2"
-            style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontWeight: 400, fontSize: 36, letterSpacing: '-0.8px', lineHeight: 1 }}
-          >
-            review & pay.
+            <span style={{ fontSize: 11, fontWeight: 700, color: n === step ? C.ink : C.muted }}>
+              {n === 1 ? 'البيانات' : 'التأكيد'}
+            </span>
+            {i === 0 && <div style={{ width: 32, height: 1, background: step > 1 ? C.red : C.rule, marginLeft: 4 }} />}
           </div>
+        ))}
+      </div>
 
-          {/* Payment method */}
-          <div className="mb-5">
-            <div className="font-mono text-[9px] text-muted tracking-[1.5px] uppercase mb-2">Payment</div>
-            <div
-              className="rounded-2xl border px-4 py-3.5 flex items-center justify-between"
-              style={{ background: '#fff', borderColor: '#1f1813' }}
-            >
-              <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 16, color: '#1f1813' }}>
-                Cash on delivery
-              </div>
-              <div
-                className="rounded-full"
-                style={{ width: 18, height: 18, background: '#1f1813', border: '1.5px solid #1f1813' }}
-              />
+      <div style={{ padding: '20px 18px', paddingBottom: 120 }}>
+        {/* Step 1 */}
+        {step === 1 && (
+          <>
+            <div style={{ ...disp, fontSize: 22, fontWeight: 900, color: C.ink, marginBottom: 20 }}>
+              {isDelivery ? 'بتوصّل فين؟' : 'بياناتك'}
             </div>
-          </div>
 
-          {/* Order items */}
-          <div className="mb-5">
-            <div className="font-mono text-[9px] text-ochre tracking-[2px] uppercase mb-3">— your order —</div>
-            <div
-              className="rounded-2xl p-4"
-              style={{ background: '#f3ead8' }}
-            >
+            {!isDelivery && (
+              <div style={{
+                background: C.yellowSoft, border: `1px solid ${C.yellow}`, borderRadius: 12,
+                padding: '12px 14px', marginBottom: 20,
+              }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.redDeep }}>
+                  {serviceType === 'استلام' ? '📦 هتاخد الطلب بنفسك — جاهز في ١٥ دقيقة' : '🍽 داخل المحل — هيتجهز على الفور'}
+                </div>
+              </div>
+            )}
+
+            <Field label="الاسم" value={state.customer.name} onChange={v => updateCustomer('name', v)} placeholder="اسمك كامل" error={errors.name} />
+            <Field label="رقم الموبايل" value={state.customer.phone} onChange={v => updateCustomer('phone', v)} type="tel" placeholder="01xxxxxxxxx" error={errors.phone} />
+            {isDelivery && (
+              <>
+                <Field label="العنوان" value={state.customer.address} onChange={v => updateCustomer('address', v)} placeholder="الشارع والمنطقة" error={errors.address} />
+                <Field label="الدور / الشقة" value={state.customer.building} onChange={v => updateCustomer('building', v)} placeholder="مثال: الدور الثالث، شقة ٢" optional />
+              </>
+            )}
+            <Field label={isDelivery ? 'ملاحظة للتوصيل' : 'طلبات خاصة'} value={state.customer.deliveryNotes} onChange={v => updateCustomer('deliveryNotes', v)} placeholder="مثال: اطرق الباب الجانبي…" optional />
+          </>
+        )}
+
+        {/* Step 2 */}
+        {step === 2 && (
+          <>
+            <div style={{ ...disp, fontSize: 22, fontWeight: 900, color: C.ink, marginBottom: 20 }}>مراجعة وتأكيد</div>
+
+            {/* Customer summary */}
+            <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 14, padding: '14px 16px', marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, marginBottom: 8 }}>بياناتك</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: C.ink }}>{state.customer.name}</div>
+              <div style={{ fontSize: 13, color: C.body, marginTop: 2 }}>{state.customer.phone}</div>
+              {isDelivery && <div style={{ fontSize: 13, color: C.body, marginTop: 2 }}>{[state.customer.address, state.customer.building].filter(Boolean).join(' · ')}</div>}
+              {state.customer.deliveryNotes && <div style={{ fontSize: 12, color: C.muted, fontStyle: 'italic', marginTop: 2 }}>{state.customer.deliveryNotes}</div>}
+            </div>
+
+            {/* Order items */}
+            <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 14, padding: '14px 16px', marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, marginBottom: 10 }}>طلبك</div>
               {state.items.map(item => (
-                <div key={item.id} className="flex justify-between py-1.5 text-sm text-ink-body">
-                  <span>
-                    {item.name}
-                    <span className="text-muted ml-1.5">×{item.quantity}</span>
+                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontSize: 13 }}>
+                  <span style={{ color: C.body }}>
+                    {item.name} <span style={{ color: C.muted }}>×{item.quantity}</span>
                   </span>
-                  <span className="text-ink">${(item.price * item.quantity).toFixed(2)}</span>
+                  <span style={{ ...disp, color: C.ink, fontWeight: 700 }}>{egp(item.price * item.quantity)}</span>
                 </div>
               ))}
-              <div className="border-t border-rule mt-2 pt-3 flex justify-between">
-                <div className="font-mono text-[9px] text-muted tracking-[1.5px] uppercase">Delivery</div>
-                <div className="text-sm text-terra italic">complimentary</div>
-              </div>
-              <div className="mt-2 flex items-baseline justify-between">
-                <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 18, color: '#1f1813' }}>
-                  total
+              <div style={{ height: 1, background: C.rule, margin: '10px 0' }} />
+              {[['التوصيل', egp(delivery)], ['الإجمالي', egp(total + delivery)]].map(([k, v], i) => (
+                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+                  <span style={{ fontSize: i === 1 ? 15 : 13, fontWeight: i === 1 ? 900 : 600, color: C.ink }}>{k}</span>
+                  <span style={{ ...disp, fontSize: i === 1 ? 20 : 13, fontWeight: i === 1 ? 900 : 700, color: i === 1 ? C.red : C.ink, fontStyle: 'italic' }}>{v}</span>
                 </div>
-                <div style={{ fontFamily: 'Fraunces, serif', fontSize: 26, fontWeight: 500, color: '#1f1813', letterSpacing: '-0.6px' }}>
-                  ${total.toFixed(2)}
-                </div>
+              ))}
+            </div>
+
+            {/* Payment */}
+            <div style={{ background: C.card, border: `1.5px solid ${C.ink}`, borderRadius: 14, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>💵 كاش عند التوصيل</div>
+              <div style={{ width: 18, height: 18, borderRadius: 9, background: C.ink }} />
+            </div>
+
+            {status === 'error' && (
+              <div style={{ background: '#fde2dc', border: `1px solid ${C.red}`, borderRadius: 12, padding: '12px 14px', marginBottom: 14 }}>
+                <p style={{ fontSize: 12, color: C.red, fontWeight: 700 }}>حصل مشكلة. تحقق من النت وحاول تاني.</p>
               </div>
-            </div>
-          </div>
-
-          {/* Customer summary */}
-          <div className="mb-5">
-            <div className="font-mono text-[9px] text-muted tracking-[1.5px] uppercase mb-2">
-              {isDelivery ? 'Delivering to' : serviceType}
-            </div>
-            <div className="text-sm text-ink-body leading-relaxed">
-              <div className="font-medium text-ink">{state.customer.name}</div>
-              <div>{state.customer.phone}</div>
-              {isDelivery && (
-                <div>{[state.customer.address, state.customer.building].filter(Boolean).join(', ')}</div>
-              )}
-              {state.customer.deliveryNotes && (
-                <div className="text-muted italic mt-0.5">{state.customer.deliveryNotes}</div>
-              )}
-            </div>
-          </div>
-
-          {status === 'error' && (
-            <div className="mb-4 rounded-2xl border border-terra/40 bg-terra/5 px-4 py-3">
-              <p className="font-mono text-[11px] text-terra">
-                Couldn't reach the kitchen. Check your connection and try again.
-              </p>
-            </div>
-          )}
-        </>
-      )}
+            )}
+          </>
+        )}
+      </div>
 
       {/* Bottom CTA */}
-      <div className="fixed left-0 right-0 bottom-0 z-50 px-4 pb-8">
-        <div className="max-w-xl mx-auto flex gap-3">
-          {step === 2 && (
-            <button
-              onClick={() => setStep(1)}
-              className="rounded-2xl border border-ink px-5 py-4 text-sm font-semibold text-ink"
-            >
-              back
-            </button>
-          )}
+      <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50, padding: '0 14px 24px', display: 'flex', gap: 10 }}>
+        {step === 2 && (
           <button
-            onClick={step === 1 ? handleStep1Continue : handlePlaceOrder}
-            disabled={status === 'loading'}
-            className="flex-1 flex items-center justify-between rounded-2xl px-5 py-4 shadow-2xl disabled:opacity-50"
-            style={{ background: '#1f1813' }}
+            onClick={() => setStep(1)}
+            style={{ borderRadius: 14, border: `1.5px solid ${C.ink}`, padding: '14px 18px', fontSize: 14, fontWeight: 800, color: C.ink, background: C.card, cursor: 'pointer' }}
           >
-            <div className="text-sm text-[#c9b39a]">
-              {step === 1 ? `${itemCount} ${itemCount === 1 ? 'dish' : 'dishes'}` : `$${total.toFixed(2)} · tonight`}
-            </div>
-            <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 17, color: '#fbf6ec', display: 'flex', alignItems: 'center', gap: 8 }}>
-              {status === 'loading' ? (
-                <SpinnerIcon />
-              ) : step === 1 ? (
-                'continue →'
-              ) : (
-                'place order →'
-              )}
-            </div>
+            تعديل
           </button>
-        </div>
+        )}
+        <button
+          onClick={step === 1 ? handleStep1Continue : handlePlaceOrder}
+          disabled={status === 'loading'}
+          style={{
+            flex: 1, background: C.red, color: '#fff', border: 'none', borderRadius: 14,
+            padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            boxShadow: '0 12px 28px rgba(168,22,12,0.4)', cursor: 'pointer', opacity: status === 'loading' ? 0.6 : 1,
+          }}
+        >
+          <span style={{ fontSize: 11, color: '#fde6a8', fontWeight: 700 }}>
+            {step === 1 ? `${state.items.reduce((s, i) => s + i.quantity, 0)} صنف` : egp(total + delivery)}
+          </span>
+          <span style={{ ...disp, fontSize: 16, fontWeight: 900, fontStyle: 'italic' }}>
+            {status === 'loading' ? '…' : step === 1 ? 'متابعة ←' : 'تأكيد الطلب ←'}
+          </span>
+        </button>
       </div>
     </div>
   )

@@ -12,9 +12,9 @@
   }
 
   body {
-    font-family: 'Work Sans', sans-serif;
-    background-color: #fbf6ec;
-    color: #1f1813;
+    font-family: 'Cairo', 'Noto Naskh Arabic', system-ui, sans-serif;
+    background-color: #f5ece0;
+    color: #1a0e08;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

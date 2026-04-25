@@ -1,6 +1,24 @@
 import { useNavigate } from 'react-router-dom'
 import { useCart, calculateTotal } from '../context/CartContext'
 
+const C = {
+  red:        '#a8160c',
+  redDeep:    '#7a0d05',
+  yellow:     '#f4b528',
+  yellowSoft: '#fde6a8',
+  bg:         '#f5ece0',
+  card:       '#ffffff',
+  ink:        '#1a0e08',
+  body:       '#5b4636',
+  muted:      '#9a8674',
+  rule:       '#ead8bf',
+  green:      '#1f7a3f',
+}
+
+const ar = { fontFamily: '"Cairo", "Noto Naskh Arabic", system-ui, sans-serif' }
+const disp = { fontFamily: '"Rubik", "Cairo", system-ui, sans-serif' }
+const egp = (n) => `${n} ج.م`
+
 function CartPage() {
   const { state, dispatch } = useCart()
   const navigate = useNavigate()
@@ -16,170 +34,188 @@ function CartPage() {
 
   if (state.items.length === 0) {
     return (
-      <div className="max-w-xl mx-auto px-5 pt-16 pb-32 flex flex-col items-center text-center">
-        <div
-          className="text-ink mb-3"
-          style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 42, fontWeight: 400, letterSpacing: '-1px', lineHeight: 1 }}
-        >
-          still hungry?
-        </div>
-        <p className="text-sm text-ink-body mb-8">Your table is empty. Add some dishes first.</p>
+      <div dir="rtl" style={{ ...ar, background: C.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 24px', textAlign: 'center' }}>
+        <div style={{ fontSize: 64 }}>🛒</div>
+        <div style={{ ...disp, fontSize: 22, fontWeight: 900, color: C.ink, marginTop: 12 }}>السلة فارغة</div>
+        <p style={{ fontSize: 14, color: C.body, marginTop: 8, marginBottom: 24 }}>أضف أصناف من القائمة أولاً</p>
         <button
           onClick={() => navigate('/')}
-          className="px-6 py-3 rounded-2xl bg-ink text-paper text-sm font-semibold"
+          style={{ background: C.red, color: '#fff', border: 'none', borderRadius: 14, padding: '14px 28px', fontSize: 15, fontWeight: 800, cursor: 'pointer' }}
         >
-          browse the menu →
+          ← القائمة
         </button>
       </div>
     )
   }
 
+  const delivery = 15
+
   return (
-    <div className="max-w-xl mx-auto px-5" style={{ paddingBottom: 120 }}>
-      {/* Header nav */}
-      <div className="pt-16 pb-4 flex items-center justify-between">
+    <div dir="rtl" style={{ background: C.bg, minHeight: '100vh', ...ar }}>
+      {/* Header */}
+      <div style={{
+        padding: '54px 18px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        background: C.red, color: '#fff',
+      }}>
         <button
           onClick={() => navigate('/')}
-          className="font-mono text-[10px] text-muted tracking-[2px] uppercase"
+          style={{
+            width: 38, height: 38, borderRadius: 19, background: 'rgba(255,255,255,0.18)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer',
+          }}
         >
-          ← back to menu
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
-        <div className="font-mono text-[10px] text-terra tracking-[2px] uppercase">◆ your table</div>
+        <div style={{ fontSize: 17, fontWeight: 900 }}>السلة</div>
+        <button
+          onClick={() => state.items.forEach(i => dispatch({ type: 'REMOVE_ITEM', payload: i.id }))}
+          style={{ fontSize: 12, fontWeight: 700, color: C.yellow, background: 'none', border: 'none', cursor: 'pointer' }}
+        >
+          مسح الكل
+        </button>
       </div>
 
-      {/* Title */}
-      <div className="pb-5">
-        <div
-          className="text-ink leading-none"
-          style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontWeight: 400, fontSize: 46, letterSpacing: '-1.2px', lineHeight: 1 }}
-        >
-          your table.
-        </div>
-        <div className="flex items-center gap-3 mt-2 flex-wrap">
-          <p className="text-sm text-ink-body">
-            {itemCount} {itemCount === 1 ? 'dish' : 'dishes'}
-          </p>
-          <span
-            className="font-mono text-[9px] px-2.5 py-1 rounded-full tracking-[1px] uppercase"
-            style={{ background: '#f3ead8', color: '#b8391a', border: '1px solid #e6dac1' }}
+      {/* Address card */}
+      <div style={{ padding: '14px 18px 8px' }}>
+        <div style={{
+          background: C.card, border: `1px solid ${C.rule}`, borderRadius: 14,
+          padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12,
+        }}>
+          <div style={{
+            width: 38, height: 38, borderRadius: 10, background: C.yellowSoft,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 14s-5-4-5-8a5 5 0 0110 0c0 4-5 8-5 8z" stroke={C.red} strokeWidth="1.6" />
+              <circle cx="8" cy="6" r="1.8" fill={C.red} />
+            </svg>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: C.muted, fontWeight: 700 }}>التوصيل إلى</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.ink, marginTop: 1 }}>
+              {state.customer.address || 'أضف عنوان التوصيل'}
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/checkout')}
+            style={{ fontSize: 12, fontWeight: 800, color: C.red, background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            {state.serviceType}
-          </span>
+            {state.customer.address ? 'تغيير' : 'إضافة'}
+          </button>
         </div>
       </div>
 
       {/* Items */}
-      <div>
+      <div style={{ padding: '8px 18px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {state.items.map(item => (
-          <div key={item.id} className="flex gap-3 py-4 border-t border-rule">
-            <div className="w-16 h-16 rounded-xl overflow-hidden bg-paper-deep flex-shrink-0">
-              {item.image && (
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="w-full h-full object-cover"
-                  onError={e => { e.target.style.display = 'none' }}
-                />
-              )}
+          <div key={item.id} style={{
+            background: C.card, border: `1px solid ${C.rule}`, borderRadius: 14,
+            padding: 10, display: 'flex', gap: 12, alignItems: 'center',
+          }}>
+            <div style={{
+              width: 60, height: 60, borderRadius: 10, flexShrink: 0,
+              backgroundImage: `url(${item.image})`, backgroundSize: 'cover', backgroundPosition: 'center',
+              background: item.image ? undefined : C.rule,
+            }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: C.ink, lineHeight: 1.2 }}>{item.name}</div>
+              <div style={{ ...disp, fontSize: 15, fontWeight: 800, color: C.red, marginTop: 4, fontStyle: 'italic' }}>
+                {egp(item.price * item.quantity)}
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <div
-                className="text-ink leading-tight"
-                style={{ fontFamily: 'Fraunces, serif', fontSize: 16, fontWeight: 500, letterSpacing: '-0.2px' }}
-              >
-                {item.name}
-              </div>
-              <div className="text-[11px] text-muted mt-0.5">${item.price.toFixed(2)} each</div>
-              <div className="flex items-center justify-between mt-2">
-                <div
-                  className="inline-flex items-center gap-1 rounded-full p-0.5"
-                  style={{ background: '#f3ead8' }}
-                >
-                  <button
-                    onClick={() => update(item.id, -1)}
-                    className="w-6 h-6 flex items-center justify-center text-ink-body rounded-full text-sm leading-none"
-                  >
-                    −
-                  </button>
-                  <span className="w-6 text-center text-sm font-semibold text-ink">{item.quantity}</span>
-                  <button
-                    onClick={() => update(item.id, 1)}
-                    className="w-6 h-6 flex items-center justify-center text-ink-body rounded-full text-sm leading-none"
-                  >
-                    +
-                  </button>
-                </div>
-                <div
-                  className="text-ink"
-                  style={{ fontFamily: 'Fraunces, serif', fontSize: 16, fontWeight: 600 }}
-                >
-                  ${(item.price * item.quantity).toFixed(2)}
-                </div>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, background: C.bg, borderRadius: 10, padding: 3 }}>
+              <button
+                onClick={() => update(item.id, 1)}
+                style={{ width: 28, height: 24, borderRadius: 7, background: C.card, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', color: C.ink }}
+              >+</button>
+              <div style={{ fontSize: 13, fontWeight: 800, padding: '2px 0', color: C.ink }}>{item.quantity}</div>
+              <button
+                onClick={() => update(item.id, -1)}
+                style={{ width: 28, height: 24, borderRadius: 7, background: C.card, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', color: C.ink }}
+              >−</button>
             </div>
             <button
               onClick={() => remove(item.id)}
-              className="self-start pt-0.5 text-muted hover:text-terra transition-colors"
-              aria-label="Remove item"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, padding: 4 }}
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
             </button>
           </div>
         ))}
       </div>
 
-      {/* Add more row */}
-      <button
-        onClick={() => navigate('/')}
-        className="w-full mt-3 border border-dashed border-rule rounded-2xl py-3.5 px-4 flex items-center justify-between text-sm"
-      >
-        <span className="text-ink-body">
-          <span style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', color: '#1f1813' }}>
-            still hungry?
-          </span>{' '}
-          add more dishes
-        </span>
-        <span className="text-terra font-semibold">+</span>
-      </button>
+      {/* Add more */}
+      <div style={{ padding: '12px 18px 0' }}>
+        <button
+          onClick={() => navigate('/')}
+          style={{
+            width: '100%', background: C.card, border: `1.5px dashed ${C.rule}`, borderRadius: 12,
+            padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{ fontSize: 13, color: C.body, fontWeight: 700 }}>تضيف صنف تاني؟</span>
+          <span style={{ fontSize: 18, color: C.red }}>+</span>
+        </button>
+      </div>
 
-      {/* Totals */}
-      <div className="mt-6">
-        <div className="font-mono text-[10px] text-ochre tracking-[2px] uppercase mb-3">— the bill —</div>
-        {[
-          ['Subtotal', `$${total.toFixed(2)}`],
-          ['Delivery', 'complimentary'],
-        ].map(([label, val]) => (
-          <div key={label} className="flex justify-between py-2 text-sm text-ink-body">
-            <span>{label}</span>
-            <span style={{ color: val === 'complimentary' ? '#b8391a' : '#1f1813', fontStyle: val === 'complimentary' ? 'italic' : 'normal' }}>
-              {val}
+      {/* Payment method */}
+      <div style={{ padding: '14px 18px 0' }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: C.body, marginBottom: 8 }}>طريقة الدفع</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+          {[['💵', 'كاش', true], ['📱', 'فودافون', false], ['🏦', 'إنستاباي', false]].map(([icon, t, sel]) => (
+            <div key={t} style={{
+              background: sel ? C.ink : C.card,
+              color: sel ? '#fff' : C.ink,
+              border: sel ? 'none' : `1px solid ${C.rule}`,
+              borderRadius: 11, padding: '10px 4px', textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 16 }}>{icon}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, marginTop: 3 }}>{t}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Summary */}
+      <div style={{ padding: '14px 18px 140px' }}>
+        <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 14, padding: '14px 16px' }}>
+          {[['المجموع الفرعي', egp(total)], ['التوصيل', egp(delivery)]].map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontSize: 13 }}>
+              <span style={{ color: C.body, fontWeight: 600 }}>{k}</span>
+              <span style={{ ...disp, color: C.ink, fontWeight: 700 }}>{v}</span>
+            </div>
+          ))}
+          <div style={{ height: 1, background: C.rule, margin: '10px 0' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span style={{ fontSize: 15, fontWeight: 900, color: C.ink }}>الإجمالي</span>
+            <span style={{ ...disp, fontSize: 26, fontWeight: 900, color: C.red, letterSpacing: -0.5, fontStyle: 'italic' }}>
+              {egp(total + delivery)}
             </span>
-          </div>
-        ))}
-        <div className="border-t border-rule mt-2 pt-3 flex items-baseline justify-between">
-          <div style={{ fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 500, color: '#1f1813' }}>Total</div>
-          <div style={{ fontFamily: 'Fraunces, serif', fontSize: 30, fontWeight: 500, color: '#1f1813', letterSpacing: '-0.6px' }}>
-            ${total.toFixed(2)}
           </div>
         </div>
       </div>
 
-      {/* Checkout bar */}
-      <div className="fixed left-0 right-0 bottom-0 z-50 px-4 pb-8">
-        <div className="max-w-xl mx-auto">
-          <button
-            onClick={() => navigate('/checkout')}
-            className="w-full flex items-center justify-between rounded-2xl px-5 py-4 shadow-2xl"
-            style={{ background: '#1f1813' }}
-          >
-            <div className="text-sm text-[#c9b39a]">${total.toFixed(2)}</div>
-            <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 18, color: '#fbf6ec' }}>
-              checkout →
+      {/* Bottom action */}
+      <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50, padding: '0 14px 24px' }}>
+        <button
+          onClick={() => navigate('/checkout')}
+          style={{
+            width: '100%', maxWidth: 600, margin: '0 auto', display: 'flex',
+            background: C.red, color: '#fff', borderRadius: 16, padding: '14px 18px',
+            alignItems: 'center', justifyContent: 'space-between',
+            boxShadow: '0 12px 28px rgba(168,22,12,0.4)',
+            border: 'none', cursor: 'pointer',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 11, color: '#fde6a8', fontWeight: 700 }}>{itemCount} صنف</div>
+            <div style={{ ...disp, fontSize: 18, fontWeight: 900, fontStyle: 'italic', marginTop: 1 }}>
+              {egp(total + delivery)}
             </div>
-          </button>
-        </div>
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 900 }}>تأكيد الطلب ←</div>
+        </button>
       </div>
     </div>
   )

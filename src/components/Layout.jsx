@@ -2,7 +2,7 @@ import { Outlet } from 'react-router-dom'
 
 function Layout() {
   return (
-    <div className="min-h-screen bg-paper">
+    <div style={{ minHeight: '100vh', background: '#f5ece0' }}>
       <Outlet />
     </div>
   )

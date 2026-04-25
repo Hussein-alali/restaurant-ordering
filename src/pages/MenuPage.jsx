@@ -3,297 +3,266 @@ import { useNavigate } from 'react-router-dom'
 import { useCart, calculateTotal } from '../context/CartContext'
 import menuData, { CATS } from '../data/menu'
 
-const ROMAN = ['i', 'ii', 'iii', 'iv']
-
-function SearchIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-      <circle cx="6.5" cy="6.5" r="4.5" stroke="#8a7a6b" strokeWidth="1.6" />
-      <path d="M10 10l3.5 3.5" stroke="#8a7a6b" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  )
+const C = {
+  red:        '#a8160c',
+  redDeep:    '#7a0d05',
+  redDark:    '#5a0902',
+  yellow:     '#f4b528',
+  yellowSoft: '#fde6a8',
+  bg:         '#f5ece0',
+  card:       '#ffffff',
+  ink:        '#1a0e08',
+  body:       '#5b4636',
+  muted:      '#9a8674',
+  rule:       '#ead8bf',
+  green:      '#1f7a3f',
+  hot:        '#e63a1c',
 }
 
-function AddBtn({ small, onClick }) {
-  const s = small ? 32 : 40
-  return (
-    <button
-      onClick={onClick}
-      className="flex-shrink-0 flex items-center justify-center rounded-full bg-ink text-white active:scale-90 transition-transform"
-      style={{ width: s, height: s }}
-      aria-label="Add to cart"
-    >
-      <svg width={small ? 12 : 14} height={small ? 12 : 14} viewBox="0 0 14 14" fill="none">
-        <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    </button>
-  )
-}
+const ar = { fontFamily: '"Cairo", "Noto Naskh Arabic", system-ui, sans-serif' }
+const disp = { fontFamily: '"Rubik", "Cairo", system-ui, sans-serif' }
+const egp = (n) => `${n} ج.م`
 
-function FeaturedCard({ item, onAdd }) {
+function CCLogo({ size = 48 }) {
   return (
-    <div className="mb-6">
-      <div className="relative rounded-2xl overflow-hidden bg-paper-deep" style={{ aspectRatio: '4/3' }}>
-        {item.image && (
-          <img
-            src={item.image}
-            alt={item.name}
-            className="w-full h-full object-cover"
-            onError={e => { e.target.style.display = 'none' }}
-          />
-        )}
-        <div className="absolute top-3 right-3">
-          <span
-            className="bg-white rounded-full px-3 py-1.5 text-sm text-ink"
-            style={{ fontFamily: 'Fraunces, serif', fontWeight: 600 }}
-          >
-            ${item.price.toFixed(2)}
-          </span>
-        </div>
-      </div>
-      <div className="mt-4 flex items-start gap-3">
-        <div className="flex-1">
-          <h3
-            className="text-ink leading-tight"
-            style={{ fontFamily: 'Fraunces, serif', fontSize: 24, fontWeight: 500, letterSpacing: '-0.4px' }}
-          >
-            {item.name}
-          </h3>
-          <p className="text-sm text-ink-body leading-relaxed mt-1.5">{item.description}</p>
-        </div>
-        <AddBtn onClick={() => onAdd(item)} />
+    <div style={{
+      width: size, height: size, borderRadius: size / 2,
+      background: C.yellow, position: 'relative',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      boxShadow: `inset 0 0 0 3px ${C.ink}`, flexShrink: 0,
+    }}>
+      <div style={{ textAlign: 'center', lineHeight: 0.85, position: 'relative' }}>
+        <div style={{ ...disp, fontSize: size * 0.16, fontWeight: 800, color: C.red, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: -0.5 }}>Crepe</div>
+        <div style={{ ...disp, fontSize: size * 0.18, fontWeight: 900, color: C.ink, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: -0.5, marginTop: 2 }}>CoRner</div>
       </div>
     </div>
   )
 }
 
-function ListRow({ item, onAdd }) {
+function Tag({ tag }) {
+  if (tag === 'hot')       return <span style={{ ...ar, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: '#fde2dc', color: C.hot }}>🌶 حار</span>
+  if (tag === 'popular')   return <span style={{ ...ar, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: C.yellowSoft, color: C.redDeep }}>⭐ الأكثر طلباً</span>
+  if (tag === 'signature') return <span style={{ ...ar, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: C.ink, color: C.yellow }}>✦ سيجنتشر</span>
+  if (tag === 'family')    return <span style={{ ...ar, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: '#e6f4ec', color: C.green }}>👨‍👩‍👧 عيلة</span>
+  return null
+}
+
+function MenuRow({ item, onAdd }) {
   return (
-    <div className="flex items-center gap-3.5 py-3.5 border-t border-rule">
-      <div className="w-[70px] h-[70px] flex-shrink-0 rounded-xl overflow-hidden bg-paper-deep">
-        {item.image && (
-          <img
-            src={item.image}
-            alt={item.name}
-            className="w-full h-full object-cover"
-            onError={e => { e.target.style.display = 'none' }}
-          />
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div
-          className="text-ink leading-tight"
-          style={{ fontFamily: 'Fraunces, serif', fontSize: 17, fontWeight: 500, letterSpacing: '-0.2px' }}
-        >
+    <div style={{
+      background: C.card, borderRadius: 14, padding: 10,
+      border: `1px solid ${C.rule}`,
+      display: 'flex', gap: 12, alignItems: 'center',
+    }}>
+      <div style={{
+        width: 76, height: 76, flexShrink: 0, borderRadius: 11,
+        backgroundImage: `url(${item.image})`, backgroundSize: 'cover', backgroundPosition: 'center',
+        background: item.image ? undefined : C.rule,
+      }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4, flexWrap: 'wrap' }}>
+          {item.tags.map(t => <Tag key={t} tag={t} />)}
+        </div>
+        <div style={{ ...ar, fontSize: 15, fontWeight: 800, color: C.ink, lineHeight: 1.25 }}>
           {item.name}
         </div>
-        <div className="text-xs text-ink-body leading-snug mt-0.5 line-clamp-2">{item.description}</div>
-        <div
-          className="text-ink mt-1"
-          style={{ fontFamily: 'Fraunces, serif', fontSize: 14, fontWeight: 600 }}
-        >
-          ${item.price.toFixed(2)}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+          <div style={{ ...disp, fontSize: 17, fontWeight: 800, color: C.red, fontStyle: 'italic' }}>
+            {egp(item.price)}
+          </div>
+          <button
+            onClick={() => onAdd(item)}
+            style={{
+              width: 34, height: 34, borderRadius: 10, background: C.ink, color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: 'none', cursor: 'pointer', flexShrink: 0,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 2v10M2 7h10" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" /></svg>
+          </button>
         </div>
       </div>
-      <AddBtn small onClick={() => onAdd(item)} />
     </div>
   )
 }
 
 function MenuPage() {
   const { state, dispatch } = useCart()
-  const [activeCategory, setActiveCategory] = useState(CATS[0])
-  const [searchQuery, setSearchQuery] = useState('')
+  const [activeCat, setActiveCat] = useState(CATS[0].id)
   const navigate = useNavigate()
 
-  const cartCount = state.items.reduce((sum, i) => sum + i.quantity, 0)
+  const cartCount = state.items.reduce((s, i) => s + i.quantity, 0)
   const total = calculateTotal(state.items)
-  const serviceType = state.serviceType
 
-  const serviceLabel = {
-    Delivery: `$${total.toFixed(2)} · 30 min`,
-    'Dine-in': `$${total.toFixed(2)} · at the table`,
-    Takeaway: `$${total.toFixed(2)} · pickup 20 min`,
-  }
+  const items = menuData.filter(m => m.cat === activeCat)
+  const cat = CATS.find(c => c.id === activeCat)
 
-  const searching = searchQuery.trim().length > 0
-
-  const filteredItems = menuData.filter(item => {
-    if (searching) return item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    return item.category === activeCategory
-  })
-
-  const catIndex = CATS.indexOf(activeCategory)
+  const serviceOptions = [
+    { key: 'توصيل',        sub: '٣٠ د' },
+    { key: 'استلام',       sub: '١٥ د' },
+    { key: 'داخل المحل',   sub: 'QR'   },
+  ]
 
   const addToCart = item => dispatch({ type: 'ADD_ITEM', payload: item })
 
   return (
-    <div className="max-w-xl mx-auto px-5" style={{ paddingBottom: cartCount > 0 ? 120 : 48 }}>
-      {/* Hero */}
-      <div className="pt-16 pb-5">
-        <div className="font-mono text-[10px] text-terra tracking-[2px] uppercase mb-3">
-          ◆ Est. 2019 · Open till 11
+    <div dir="rtl" style={{ background: C.bg, minHeight: '100vh', ...ar }}>
+      {/* Red header */}
+      <div style={{
+        background: `linear-gradient(180deg, ${C.redDark} 0%, ${C.red} 100%)`,
+        padding: '54px 18px 18px',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: `radial-gradient(circle at 20% 30%, rgba(244,181,40,0.08) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.05) 0%, transparent 40%)`,
+          pointerEvents: 'none',
+        }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
+          <CCLogo size={48} />
+          <div style={{ flex: 1 }}>
+            <div style={{ ...disp, color: C.yellow, fontWeight: 800, fontSize: 18, letterSpacing: -0.3, fontStyle: 'italic' }}>
+              Crepe Corner
+            </div>
+            <div style={{ color: '#fff', fontSize: 11, opacity: 0.85, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span>📍</span> كفر صقر · شارع المستشفى · 01044438830
+            </div>
+          </div>
+          <div style={{
+            width: 38, height: 38, borderRadius: 19, background: 'rgba(255,255,255,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0,
+          }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="7" cy="7" r="5" stroke="#fff" strokeWidth="1.6" />
+              <path d="M11 11l3 3" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </div>
         </div>
-        <div
-          className="text-ink leading-none"
-          style={{
-            fontFamily: 'Fraunces, serif',
-            fontSize: 54,
-            letterSpacing: '-1.5px',
-            fontVariationSettings: '"SOFT" 40',
-          }}
-        >
-          <span style={{ fontStyle: 'italic', fontWeight: 300 }}>tavola</span>
+
+        {/* Service toggle */}
+        <div style={{
+          marginTop: 14, background: 'rgba(0,0,0,0.25)', borderRadius: 12, padding: 4,
+          display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2,
+        }}>
+          {serviceOptions.map(({ key, sub }) => {
+            const active = state.serviceType === key
+            return (
+              <button
+                key={key}
+                onClick={() => dispatch({ type: 'SET_SERVICE_TYPE', payload: key })}
+                style={{
+                  padding: '8px 6px', borderRadius: 9, textAlign: 'center',
+                  background: active ? C.yellow : 'transparent',
+                  border: 'none', cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 700, color: active ? C.ink : '#fff' }}>{key}</div>
+                <div style={{ fontSize: 9, color: active ? C.redDeep : 'rgba(255,255,255,0.7)', marginTop: 1, fontWeight: 600 }}>{sub}</div>
+              </button>
+            )
+          })}
         </div>
-        <p className="text-sm text-ink-body leading-relaxed mt-3 max-w-xs">
-          The table, delivered. A neighborhood trattoria, brought home in{' '}
-          <span style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontWeight: 500 }}>
-            thirty minutes
-          </span>
-          .
-        </p>
       </div>
 
-      {/* Service type toggle */}
-      <div className="pb-4">
-        <div
-          className="inline-flex gap-0.5 p-1 rounded-full border border-rule"
-          style={{ background: '#f3ead8' }}
-        >
-          {['Delivery', 'Dine-in', 'Takeaway'].map(t => (
+      {/* Hero offer */}
+      <div style={{ padding: '14px 18px 0' }}>
+        <div style={{
+          background: C.ink, borderRadius: 14, padding: '14px 16px',
+          display: 'flex', alignItems: 'center', gap: 12, position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{
+            width: 60, height: 60, borderRadius: 12, flexShrink: 0,
+            background: `url(https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&q=80) center/cover`,
+            border: `2px solid ${C.yellow}`,
+          }} />
+          <div style={{ flex: 1, color: '#fff' }}>
+            <div style={{ fontSize: 11, color: C.yellow, fontWeight: 700 }}>عرض اليوم</div>
+            <div style={{ fontSize: 15, fontWeight: 800, marginTop: 2, lineHeight: 1.3 }}>كريب كورنر + بطاطس</div>
+            <div style={{ fontSize: 11, color: '#d8c4a8', marginTop: 2 }}>وفّر ٢٥ ج.م</div>
+          </div>
+          <div style={{ ...disp, fontSize: 22, fontWeight: 900, color: C.yellow, fontStyle: 'italic', flexShrink: 0 }}>
+            ١٧٥<span style={{ fontSize: 11, marginRight: 2 }}>ج.م</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Category strip */}
+      <div style={{
+        padding: '14px 0 6px', position: 'sticky', top: 0, zIndex: 5,
+        background: C.bg,
+      }}>
+        <div style={{ display: 'flex', gap: 8, padding: '0 18px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+          {CATS.map(c => (
             <button
-              key={t}
-              onClick={() => dispatch({ type: 'SET_SERVICE_TYPE', payload: t })}
-              className="text-xs font-semibold px-3.5 py-1.5 rounded-full leading-none transition-all"
+              key={c.id}
+              onClick={() => setActiveCat(c.id)}
               style={{
-                color: serviceType === t ? '#fff' : '#5a4a3e',
-                background: serviceType === t ? '#1f1813' : 'transparent',
+                padding: '9px 14px', borderRadius: 999, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
+                background: c.id === activeCat ? C.red : C.card,
+                color: c.id === activeCat ? '#fff' : C.ink,
+                border: c.id === activeCat ? 'none' : `1px solid ${C.rule}`,
+                boxShadow: c.id === activeCat ? '0 4px 10px rgba(168,22,12,0.3)' : 'none',
+                cursor: 'pointer', flexShrink: 0,
               }}
             >
-              {t}
+              {c.ar}
             </button>
           ))}
         </div>
-        <div className="font-mono text-[10px] text-muted mt-2" style={{ letterSpacing: '0.5px' }}>
-          {serviceType === 'Delivery' && <>→ delivery to <span className="text-ink underline underline-offset-2">your address</span></>}
-          {serviceType === 'Dine-in' && <>→ dining <span className="text-ink">at the restaurant</span></>}
-          {serviceType === 'Takeaway' && <>→ pickup <span className="text-ink">ready in 20 min</span></>}
-        </div>
       </div>
-
-      {/* Search */}
-      <div className="mb-1">
-        <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl border border-rule bg-white">
-          <SearchIcon />
-          <input
-            type="text"
-            placeholder="search the menu…"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="flex-1 text-sm text-ink bg-transparent outline-none placeholder-muted font-mono"
-          />
-        </div>
-      </div>
-
-      {/* Sticky category strip */}
-      {!searching && (
-        <div
-          className="sticky top-0 z-20 -mx-5 px-5 py-3 border-b border-rule mb-0"
-          style={{ background: 'rgba(251,246,236,0.93)', backdropFilter: 'blur(8px)' }}
-        >
-          <div className="flex gap-5 overflow-x-auto scrollbar-hide">
-            {CATS.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className="relative pb-1.5 whitespace-nowrap flex-shrink-0 transition-colors"
-                style={{
-                  fontFamily: 'Fraunces, serif',
-                  fontSize: 18,
-                  fontWeight: 500,
-                  letterSpacing: '-0.3px',
-                  color: cat === activeCategory ? '#1f1813' : '#8a7a6b',
-                  fontStyle: cat === activeCategory ? 'italic' : 'normal',
-                }}
-              >
-                {cat.toLowerCase()}
-                {cat === activeCategory && (
-                  <span className="absolute left-0 right-0 bottom-0 block h-0.5 bg-terra" />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Section header */}
-      {!searching && (
-        <div className="flex items-baseline justify-between pt-5 pb-3">
-          <div>
-            <div className="font-mono text-[10px] text-ochre tracking-[2px] uppercase">
-              — {ROMAN[catIndex]} —
-            </div>
-            <div
-              className="text-ink mt-0.5"
-              style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontWeight: 400, fontSize: 38, letterSpacing: '-0.8px', lineHeight: 1 }}
-            >
-              {activeCategory}
-            </div>
-          </div>
-          <div className="font-mono text-[11px] text-muted">{filteredItems.length} dishes</div>
+      <div style={{
+        padding: '14px 18px 12px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div style={{
+          display: 'inline-block', background: C.red, color: '#fff',
+          padding: '10px 22px 10px 28px',
+          ...ar, fontWeight: 800, fontSize: 18,
+          clipPath: 'polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%)',
+        }}>
+          {cat?.ar}
         </div>
-      )}
-
-      {/* Search header */}
-      {searching && (
-        <div className="pt-5 pb-3">
-          <div className="font-mono text-[10px] text-ochre tracking-[2px] uppercase">— results —</div>
-          <div className="font-mono text-[11px] text-muted mt-1">{filteredItems.length} dishes found</div>
+        <div style={{ fontSize: 11, color: C.body, fontWeight: 600 }}>
+          {items.length} صنف
         </div>
-      )}
+      </div>
 
       {/* Items */}
-      {filteredItems.length === 0 ? (
-        <div className="py-16 text-center font-mono text-sm text-muted">no dishes found.</div>
-      ) : searching ? (
-        filteredItems.map(item => <ListRow key={item.id} item={item} onAdd={addToCart} />)
-      ) : (
-        <>
-          <FeaturedCard item={filteredItems[0]} onAdd={addToCart} />
-          {filteredItems.slice(1).map(item => (
-            <ListRow key={item.id} item={item} onAdd={addToCart} />
-          ))}
-        </>
-      )}
+      <div style={{ padding: '0 18px', paddingBottom: cartCount > 0 ? 120 : 32, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {items.map(item => <MenuRow key={item.id} item={item} onAdd={addToCart} />)}
+      </div>
 
       {/* Floating cart bar */}
       {cartCount > 0 && (
-        <div className="fixed left-0 right-0 bottom-0 z-50 px-4 pb-8">
-          <div className="max-w-xl mx-auto">
-            <button
-              onClick={() => navigate('/cart')}
-              className="w-full flex items-center justify-between rounded-2xl px-4 py-3.5 shadow-2xl"
-              style={{ background: '#1f1813' }}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="flex items-center justify-center rounded-full text-white font-semibold text-[13px]"
-                  style={{ width: 28, height: 28, background: '#b8391a', flexShrink: 0 }}
-                >
-                  {cartCount > 99 ? '99+' : cartCount}
-                </div>
-                <div>
-                  <div className="text-[13px] font-medium text-paper">Your table</div>
-                  <div className="font-mono text-[10px] text-[#c9b39a]" style={{ letterSpacing: '0.4px' }}>
-                    {serviceLabel[serviceType]}
-                  </div>
-                </div>
+        <div style={{
+          position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50,
+          padding: '0 16px 24px',
+        }}>
+          <button
+            onClick={() => navigate('/cart')}
+            style={{
+              width: '100%', maxWidth: 600, margin: '0 auto', display: 'flex',
+              background: C.red, borderRadius: 16, padding: '12px 16px',
+              alignItems: 'center', justifyContent: 'space-between',
+              boxShadow: '0 12px 28px rgba(168,22,12,0.4)',
+              color: '#fff', border: 'none', cursor: 'pointer',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: 10, background: C.yellow,
+                color: C.redDeep, fontSize: 14, fontWeight: 800,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>{cartCount}</div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 14, fontWeight: 800 }}>عرض السلة</div>
+                <div style={{ fontSize: 11, color: '#fde6a8', marginTop: 1 }}>{egp(total)} · {state.serviceType}</div>
               </div>
-              <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 16, color: '#fbf6ec' }}>
-                review →
-              </div>
-            </button>
-          </div>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 800 }}>← متابعة الطلب</div>
+          </button>
         </div>
       )}
     </div>

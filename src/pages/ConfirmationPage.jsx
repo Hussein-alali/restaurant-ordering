@@ -1,12 +1,29 @@
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 
+const C = {
+  red:        '#a8160c',
+  redDeep:    '#7a0d05',
+  yellow:     '#f4b528',
+  yellowSoft: '#fde6a8',
+  bg:         '#f5ece0',
+  card:       '#ffffff',
+  ink:        '#1a0e08',
+  body:       '#5b4636',
+  muted:      '#9a8674',
+  rule:       '#ead8bf',
+  green:      '#1f7a3f',
+}
+
+const ar = { fontFamily: '"Cairo", "Noto Naskh Arabic", system-ui, sans-serif' }
+const disp = { fontFamily: '"Rubik", "Cairo", system-ui, sans-serif' }
+const egp = (n) => `${n} ج.م`
 
 const TIMELINE = [
-  { key: 'received', label: 'received', desc: 'The kitchen has your order.' },
-  { key: 'prep',     label: 'preparing', desc: 'Our chefs are on it.' },
-  { key: 'riding',   label: 'on the way', desc: 'Your rider picked up the order.' },
-  { key: 'delivered',label: 'at your door', desc: 'Delivered. Buon appetito.' },
+  { key: 'received', ar: 'استُلم الطلب',   desc: 'المطبخ شايف طلبك' },
+  { key: 'prep',     ar: 'جاري التحضير',   desc: 'بيتجهز دلوقتي' },
+  { key: 'riding',   ar: 'في الطريق',       desc: 'المندوب اتحرك ناحيتك' },
+  { key: 'done',     ar: 'وصل الطلب',      desc: 'بالهنا والشفا 🎉' },
 ]
 
 function ConfirmationPage() {
@@ -14,14 +31,9 @@ function ConfirmationPage() {
   const navigate = useNavigate()
 
   const order = cartState.lastOrder
-  const serviceType = order?.serviceType || 'Delivery'
+  const serviceType = order?.serviceType || 'توصيل'
 
-  const etaLabel = { Delivery: '30–45 min', 'Dine-in': '~20 min', Takeaway: '~20 min' }
-  const etaContext = {
-    Delivery: "You'll receive a call when your rider is close.",
-    'Dine-in': 'Your order is being prepared and will be served at your table.',
-    Takeaway: 'Your order will be ready for pickup at the counter.',
-  }
+  const etaLabel = { 'توصيل': '٣٠–٤٥ دقيقة', 'استلام': '~١٥ دقيقة', 'داخل المحل': '~٢٠ دقيقة' }
 
   const handleNewOrder = () => {
     cartDispatch({ type: 'RESET' })
@@ -30,136 +42,122 @@ function ConfirmationPage() {
 
   if (!order) {
     return (
-      <div className="max-w-xl mx-auto px-5 pt-16 pb-32 flex flex-col items-center text-center">
-        <div
-          className="text-ink mb-3"
-          style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 42, fontWeight: 400, letterSpacing: '-1px', lineHeight: 1 }}
-        >
-          no order found.
-        </div>
-        <p className="text-sm text-ink-body mb-8">Place an order first.</p>
-        <button
-          onClick={() => navigate('/')}
-          className="px-6 py-3 rounded-2xl bg-ink text-paper text-sm font-semibold"
-        >
-          browse the menu →
+      <div dir="rtl" style={{ ...ar, background: C.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 24px', textAlign: 'center' }}>
+        <div style={{ ...disp, fontSize: 22, fontWeight: 900, color: C.ink, marginBottom: 8 }}>مفيش طلب</div>
+        <p style={{ fontSize: 14, color: C.body, marginBottom: 24 }}>قدّم طلب الأول</p>
+        <button onClick={() => navigate('/')} style={{ background: C.red, color: '#fff', border: 'none', borderRadius: 14, padding: '14px 28px', fontSize: 15, fontWeight: 800, cursor: 'pointer' }}>
+          ← القائمة
         </button>
       </div>
     )
   }
 
-  return (
-    <div className="max-w-xl mx-auto px-5 pb-32">
-      {/* Header */}
-      <div className="pt-16 pb-2 flex items-center justify-between">
-        <div className="font-mono text-[10px] text-muted tracking-[2px] uppercase">
-          order · #{Math.floor(Date.now() / 1000).toString(36).toUpperCase()}
-        </div>
-        <div className="font-mono text-[10px] text-terra tracking-[2px]">confirmed ●</div>
-      </div>
+  const orderNum = Math.floor(Date.now() / 1000).toString(36).toUpperCase()
 
-      {/* Large ETA */}
-      <div className="pt-5 pb-3">
-        <div className="font-mono text-[10px] text-ochre tracking-[2px] uppercase">
-          {serviceType === 'Delivery' ? 'arriving in' : 'ready in'}
+  return (
+    <div dir="rtl" style={{ background: C.bg, minHeight: '100vh', ...ar, paddingBottom: 48 }}>
+      {/* Header */}
+      <div style={{
+        padding: '54px 18px 18px', background: C.red, color: '#fff',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
+      }}>
+        <div>
+          <div style={{ fontSize: 11, color: '#fde6a8', fontWeight: 700, marginBottom: 4 }}>رقم الطلب · #{orderNum}</div>
+          <div style={{ ...disp, fontSize: 22, fontWeight: 900, fontStyle: 'italic' }}>تم تأكيد طلبك ✓</div>
         </div>
-        <div
-          className="text-ink leading-none mt-1"
-          style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontWeight: 400, fontSize: 68, letterSpacing: '-2px', lineHeight: 1 }}
-        >
+        <div style={{
+          background: C.yellow, color: C.redDeep, borderRadius: 10,
+          padding: '6px 12px', fontSize: 12, fontWeight: 800,
+        }}>
           {etaLabel[serviceType]}
         </div>
-        <p className="text-sm text-ink-body mt-3">
-          <span style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic' }}>Buon appetito, {order.customerName.split(' ')[0]}.</span>{' '}
-          {etaContext[serviceType]}
-        </p>
       </div>
 
-      {/* Timeline */}
-      <div className="mt-6">
-        <div className="font-mono text-[10px] text-ochre tracking-[2px] uppercase mb-3">— timeline —</div>
-        {TIMELINE.map((stage, i) => {
-          const active = i === 0
-          const done = false
-          return (
-            <div key={stage.key} className="grid gap-3 py-2" style={{ gridTemplateColumns: '28px 1fr' }}>
-              <div className="relative">
-                <div
-                  className="rounded-full mt-0.5"
-                  style={{
-                    width: 14,
-                    height: 14,
-                    background: active ? '#b8391a' : 'transparent',
-                    border: `1.5px solid ${active ? '#b8391a' : '#e6dac1'}`,
-                    boxShadow: active ? '0 0 0 5px rgba(184,57,26,0.12)' : 'none',
-                  }}
-                />
-                {i < TIMELINE.length - 1 && (
-                  <div
-                    className="absolute left-[6.5px] top-[18px]"
-                    style={{ bottom: -10, width: 1, background: active ? '#b8391a' : '#e6dac1' }}
-                  />
-                )}
-              </div>
-              <div>
-                <div
-                  className="leading-tight"
-                  style={{
-                    fontFamily: 'Fraunces, serif',
-                    fontStyle: active ? 'italic' : 'normal',
-                    fontSize: 18,
-                    color: active ? '#1f1813' : '#8a7a6b',
-                    letterSpacing: '-0.2px',
-                  }}
-                >
-                  {stage.label}
-                </div>
-                <div className="text-xs mt-0.5" style={{ color: active ? '#5a4a3e' : '#8a7a6b' }}>
-                  {stage.desc}
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Order summary */}
-      <div className="mt-8">
-        <div className="font-mono text-[10px] text-ochre tracking-[2px] uppercase mb-3">— your order —</div>
-        <div className="rounded-2xl p-4 border-t border-rule" style={{ background: '#f3ead8' }}>
-          <div className="border-b border-rule pb-3 mb-3">
-            <div className="font-medium text-sm text-ink">{order.customerName}</div>
-            <div className="text-sm text-ink-body">{order.phone}</div>
-            <div className="text-sm text-ink-body">{order.address}</div>
-            {order.deliveryNotes && (
-              <div className="text-sm text-muted italic mt-0.5">{order.deliveryNotes}</div>
-            )}
-          </div>
-          {order.items.map((item, idx) => (
-            <div key={idx} className="flex justify-between py-1 text-sm text-ink-body">
-              <span>
-                {item.name}
-                <span className="text-muted ml-1.5">×{item.quantity}</span>
-              </span>
-              <span className="text-ink">${(item.price * item.quantity).toFixed(2)}</span>
-            </div>
-          ))}
-          <div className="border-t border-rule mt-2 pt-3 flex items-baseline justify-between">
-            <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 18, color: '#1f1813' }}>total</div>
-            <div style={{ fontFamily: 'Fraunces, serif', fontSize: 26, fontWeight: 500, color: '#1f1813', letterSpacing: '-0.6px' }}>
-              ${order.totalPrice.toFixed(2)}
+      <div style={{ padding: '20px 18px' }}>
+        {/* Greeting */}
+        <div style={{
+          background: C.ink, borderRadius: 14, padding: '16px 18px', marginBottom: 18,
+          display: 'flex', alignItems: 'center', gap: 14,
+        }}>
+          <div style={{ fontSize: 36 }}>🎉</div>
+          <div>
+            <div style={{ color: C.yellow, fontSize: 13, fontWeight: 700 }}>الطلب جاي يا {order.customerName?.split(' ')[0] || 'صديقي'}</div>
+            <div style={{ color: '#d8c4a8', fontSize: 12, marginTop: 3 }}>
+              {serviceType === 'توصيل'
+                ? 'هنتصل بيك لما المندوب يقترب'
+                : serviceType === 'استلام'
+                  ? 'طلبك هيبقى جاهز للاستلام خلال ' + etaLabel[serviceType]
+                  : 'طلبك بيتجهز وهيتقدملك على الطاولة'}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* New order */}
-      <div className="mt-8 text-center">
+        {/* Timeline */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.body, marginBottom: 12 }}>مراحل الطلب</div>
+          {TIMELINE.map((stage, i) => {
+            const active = i === 0
+            return (
+              <div key={stage.key} style={{ display: 'grid', gridTemplateColumns: '28px 1fr', gap: 10, paddingBottom: i < TIMELINE.length - 1 ? 16 : 0, position: 'relative' }}>
+                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{
+                    width: 14, height: 14, borderRadius: 7,
+                    background: active ? C.red : 'transparent',
+                    border: `1.5px solid ${active ? C.red : C.rule}`,
+                    boxShadow: active ? '0 0 0 5px rgba(168,22,12,0.12)' : 'none',
+                    marginTop: 3, flexShrink: 0,
+                  }} />
+                  {i < TIMELINE.length - 1 && (
+                    <div style={{ flex: 1, width: 1, background: active ? C.red : C.rule, minHeight: 20, marginTop: 4 }} />
+                  )}
+                </div>
+                <div style={{ paddingBottom: 4 }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: active ? C.ink : C.muted }}>{stage.ar}</div>
+                  <div style={{ fontSize: 12, color: active ? C.body : C.muted, marginTop: 1 }}>{stage.desc}</div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Order summary */}
+        <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 14, padding: '14px 16px', marginBottom: 18 }}>
+          <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, marginBottom: 10 }}>ملخص الطلب</div>
+          {order.items.map((item, idx) => (
+            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 13 }}>
+              <span style={{ color: C.body }}>
+                {item.name} <span style={{ color: C.muted }}>×{item.quantity}</span>
+              </span>
+              <span style={{ color: C.ink, fontWeight: 700 }}>{egp(item.price * item.quantity)}</span>
+            </div>
+          ))}
+          <div style={{ height: 1, background: C.rule, margin: '10px 0' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span style={{ fontSize: 15, fontWeight: 900, color: C.ink }}>الإجمالي</span>
+            <span style={{ ...disp, fontSize: 22, fontWeight: 900, color: C.red, fontStyle: 'italic' }}>
+              {egp(order.totalPrice + 15)}
+            </span>
+          </div>
+        </div>
+
+        {/* Customer info */}
+        <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 14, padding: '14px 16px', marginBottom: 24 }}>
+          <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, marginBottom: 8 }}>بيانات التوصيل</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: C.ink }}>{order.customerName}</div>
+          <div style={{ fontSize: 13, color: C.body, marginTop: 2 }}>{order.phone}</div>
+          <div style={{ fontSize: 13, color: C.body, marginTop: 2 }}>{order.address}</div>
+          {order.deliveryNotes && <div style={{ fontSize: 12, color: C.muted, fontStyle: 'italic', marginTop: 2 }}>{order.deliveryNotes}</div>}
+        </div>
+
         <button
           onClick={handleNewOrder}
-          className="px-8 py-4 rounded-2xl bg-ink text-paper font-semibold text-sm"
+          style={{
+            width: '100%', background: C.red, color: '#fff', border: 'none', borderRadius: 14,
+            padding: '16px', fontSize: 15, fontWeight: 800, cursor: 'pointer',
+            boxShadow: '0 12px 28px rgba(168,22,12,0.3)',
+          }}
         >
-          place another order →
+          طلب جديد ←
         </button>
       </div>
     </div>

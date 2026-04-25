@@ -4,7 +4,7 @@ const CartContext = createContext(null)
 
 const initialState = {
   items: [],
-  serviceType: 'Delivery',
+  serviceType: 'توصيل',
   customer: {
     name: '',
     phone: '',
@@ -124,9 +124,9 @@ export function formatPayload(cartState) {
 
 export function validateForm(data, serviceType = 'Delivery') {
   const errors = {}
-  if (!data.name?.trim()) errors.name = 'Name is required'
-  if (!data.phone?.trim()) errors.phone = 'Phone is required'
-  else if (!/^\+?[\d\s\-().]{7,}$/.test(data.phone)) errors.phone = 'Invalid phone format'
-  if (serviceType === 'Delivery' && !data.address?.trim()) errors.address = 'Address is required'
+  if (!data.name?.trim()) errors.name = 'الاسم مطلوب'
+  if (!data.phone?.trim()) errors.phone = 'رقم الموبايل مطلوب'
+  else if (!/^\+?[\d\s\-().]{7,}$/.test(data.phone)) errors.phone = 'رقم الموبايل غير صحيح'
+  if (serviceType === 'توصيل' && !data.address?.trim()) errors.address = 'العنوان مطلوب'
   return errors
 }
