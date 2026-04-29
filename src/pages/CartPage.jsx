@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart, calculateTotal } from '../context/CartContext'
+import { ADDONS } from '../data/menu'
 
 const C = {
   red:        '#a8160c',
@@ -19,11 +21,22 @@ const ar = { fontFamily: '"Cairo", "Noto Naskh Arabic", system-ui, sans-serif' }
 const disp = { fontFamily: '"Rubik", "Cairo", system-ui, sans-serif' }
 const egp = (n) => `${n} ج.م`
 
+const UPSELL = ADDONS.slice(0, 3) // باكت بطاطس, بطاطس شيدر, تشيكن كرسبي فرايز
+const UPSELL_IMGS = [
+  'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=200&q=80',
+  'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=200&q=80',
+  'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=200&q=80',
+]
+
 function CartPage() {
   const { state, dispatch } = useCart()
   const navigate = useNavigate()
+  const [promoCode, setPromoCode] = useState('')
+  const [promoOpen, setPromoOpen] = useState(false)
+
   const total = calculateTotal(state.items)
   const itemCount = state.items.reduce((s, i) => s + i.quantity, 0)
+  const delivery = 15
 
   const update = (id, delta) => {
     const item = state.items.find(i => i.id === id)
@@ -31,6 +44,22 @@ function CartPage() {
   }
 
   const remove = id => dispatch({ type: 'REMOVE_ITEM', payload: id })
+
+  const setPayment = method => dispatch({ type: 'SET_PAYMENT_METHOD', payload: method })
+
+  const addUpsell = (addon) => {
+    dispatch({
+      type: 'ADD_ITEM',
+      payload: {
+        id: `addon-${addon.name}`,
+        name: addon.name,
+        price: addon.price,
+        image: UPSELL_IMGS[0],
+        tags: [],
+        quantity: 1,
+      },
+    })
+  }
 
   if (state.items.length === 0) {
     return (
@@ -47,8 +76,6 @@ function CartPage() {
       </div>
     )
   }
-
-  const delivery = 15
 
   return (
     <div dir="rtl" style={{ background: C.bg, minHeight: '100vh', ...ar }}>
@@ -68,7 +95,7 @@ function CartPage() {
         </button>
         <div style={{ fontSize: 17, fontWeight: 900 }}>السلة</div>
         <button
-          onClick={() => state.items.forEach(i => dispatch({ type: 'REMOVE_ITEM', payload: i.id }))}
+          onClick={() => { dispatch({ type: 'CLEAR_CART' }); navigate('/') }}
           style={{ fontSize: 12, fontWeight: 700, color: C.yellow, background: 'none', border: 'none', cursor: 'pointer' }}
         >
           مسح الكل
@@ -114,11 +141,13 @@ function CartPage() {
           }}>
             <div style={{
               width: 60, height: 60, borderRadius: 10, flexShrink: 0,
-              backgroundImage: `url(${item.image})`, backgroundSize: 'cover', backgroundPosition: 'center',
+              backgroundImage: item.image ? `url(${item.image})` : 'none',
+              backgroundSize: 'cover', backgroundPosition: 'center',
               background: item.image ? undefined : C.rule,
             }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 800, color: C.ink, lineHeight: 1.2 }}>{item.name}</div>
+              {item.note && <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{item.note}</div>}
               <div style={{ ...disp, fontSize: 15, fontWeight: 800, color: C.red, marginTop: 4, fontStyle: 'italic' }}>
                 {egp(item.price * item.quantity)}
               </div>
@@ -144,36 +173,93 @@ function CartPage() {
         ))}
       </div>
 
-      {/* Add more */}
-      <div style={{ padding: '12px 18px 0' }}>
-        <button
-          onClick={() => navigate('/')}
-          style={{
-            width: '100%', background: C.card, border: `1.5px dashed ${C.rule}`, borderRadius: 12,
-            padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            cursor: 'pointer',
-          }}
-        >
-          <span style={{ fontSize: 13, color: C.body, fontWeight: 700 }}>تضيف صنف تاني؟</span>
-          <span style={{ fontSize: 18, color: C.red }}>+</span>
-        </button>
+      {/* Upsell strip */}
+      <div style={{ padding: '14px 18px 0' }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: C.body, marginBottom: 10 }}>تضيف معاك؟</div>
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+          {UPSELL.map((addon, i) => (
+            <button
+              key={addon.name}
+              onClick={() => addUpsell(addon)}
+              style={{
+                background: C.card, border: `1px solid ${C.rule}`, borderRadius: 12,
+                padding: 8, minWidth: 120, display: 'flex', alignItems: 'center', gap: 8,
+                cursor: 'pointer', flexShrink: 0,
+              }}
+            >
+              <div style={{
+                width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+                backgroundImage: `url(${UPSELL_IMGS[i]})`,
+                backgroundSize: 'cover', backgroundPosition: 'center',
+              }} />
+              <div style={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
+                <div style={{ ...ar, fontSize: 11, fontWeight: 700, color: C.ink, lineHeight: 1.2 }}>{addon.name}</div>
+                <div style={{ ...disp, fontSize: 12, color: C.red, fontWeight: 800, marginTop: 2 }}>+ {addon.price} ج.م</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Promo code */}
+      <div style={{ padding: '14px 18px 0' }}>
+        {!promoOpen ? (
+          <button
+            onClick={() => setPromoOpen(true)}
+            style={{
+              width: '100%', background: C.yellowSoft, border: `1px dashed ${C.yellow}`, borderRadius: 12,
+              padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10,
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ fontSize: 16 }}>🎟</span>
+            <span style={{ ...ar, flex: 1, fontSize: 13, color: C.redDeep, fontWeight: 700, textAlign: 'right' }}>أضف كود الخصم</span>
+          </button>
+        ) : (
+          <div style={{
+            background: C.yellowSoft, border: `1px solid ${C.yellow}`, borderRadius: 12,
+            padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <span style={{ fontSize: 16 }}>🎟</span>
+            <input
+              value={promoCode}
+              onChange={e => setPromoCode(e.target.value)}
+              placeholder="أدخل الكود"
+              style={{
+                flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                fontSize: 13, color: C.ink, fontFamily: 'inherit', textAlign: 'right',
+              }}
+            />
+            <button style={{ fontSize: 13, fontWeight: 800, color: C.red, background: 'none', border: 'none', cursor: 'pointer' }}>
+              تطبيق
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Payment method */}
       <div style={{ padding: '14px 18px 0' }}>
         <div style={{ fontSize: 12, fontWeight: 800, color: C.body, marginBottom: 8 }}>طريقة الدفع</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
-          {[['💵', 'كاش', true], ['📱', 'فودافون', false], ['🏦', 'إنستاباي', false]].map(([icon, t, sel]) => (
-            <div key={t} style={{
-              background: sel ? C.ink : C.card,
-              color: sel ? '#fff' : C.ink,
-              border: sel ? 'none' : `1px solid ${C.rule}`,
-              borderRadius: 11, padding: '10px 4px', textAlign: 'center',
-            }}>
-              <div style={{ fontSize: 16 }}>{icon}</div>
-              <div style={{ fontSize: 12, fontWeight: 700, marginTop: 3 }}>{t}</div>
-            </div>
-          ))}
+          {[['💵', 'كاش'], ['📱', 'فودافون'], ['🏦', 'إنستاباي']].map(([icon, method]) => {
+            const sel = state.paymentMethod === method
+            return (
+              <button
+                key={method}
+                onClick={() => setPayment(method)}
+                style={{
+                  background: sel ? C.ink : C.card,
+                  color: sel ? '#fff' : C.ink,
+                  border: sel ? 'none' : `1px solid ${C.rule}`,
+                  borderRadius: 11, padding: '10px 4px', textAlign: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontSize: 16 }}>{icon}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, marginTop: 3 }}>{method}</div>
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -209,7 +295,7 @@ function CartPage() {
           }}
         >
           <div>
-            <div style={{ fontSize: 11, color: '#fde6a8', fontWeight: 700 }}>{itemCount} صنف</div>
+            <div style={{ fontSize: 11, color: '#fde6a8', fontWeight: 700 }}>الإجمالي · {itemCount} صنف</div>
             <div style={{ ...disp, fontSize: 18, fontWeight: 900, fontStyle: 'italic', marginTop: 1 }}>
               {egp(total + delivery)}
             </div>

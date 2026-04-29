@@ -212,7 +212,9 @@ function CheckoutPage() {
 
             {/* Payment */}
             <div style={{ background: C.card, border: `1.5px solid ${C.ink}`, borderRadius: 14, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>💵 كاش عند التوصيل</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>
+                {state.paymentMethod === 'فودافون' ? '📱' : state.paymentMethod === 'إنستاباي' ? '🏦' : '💵'} {state.paymentMethod || 'كاش'}
+              </div>
               <div style={{ width: 18, height: 18, borderRadius: 9, background: C.ink }} />
             </div>
 

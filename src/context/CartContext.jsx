@@ -5,6 +5,7 @@ const CartContext = createContext(null)
 const initialState = {
   items: [],
   serviceType: 'توصيل',
+  paymentMethod: 'كاش',
   customer: {
     name: '',
     phone: '',
@@ -62,6 +63,8 @@ function cartReducer(state, action) {
       }
     case 'SET_SERVICE_TYPE':
       return { ...state, serviceType: action.payload }
+    case 'SET_PAYMENT_METHOD':
+      return { ...state, paymentMethod: action.payload }
     case 'SET_CUSTOMER':
       return {
         ...state,
@@ -102,13 +105,14 @@ export function calculateTotal(items) {
 }
 
 export function formatPayload(cartState) {
-  const { serviceType, customer } = cartState
+  const { serviceType, paymentMethod, customer } = cartState
   const addressParts = [customer.address, customer.building].filter(Boolean)
-  const address = serviceType === 'Delivery' ? addressParts.join(', ') : serviceType
+  const address = serviceType === 'توصيل' ? addressParts.join(', ') : serviceType
   return {
     customerName: customer.name,
     phone: customer.phone,
     serviceType,
+    paymentMethod: paymentMethod || 'كاش',
     address,
     items: cartState.items.map(item => ({
       id: item.id,
