@@ -1,19 +1,85 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>كريب كورنر | Crepe Corner</title>
-    <meta name="description" content="كريب كورنر — كفر صقر · شارع المستشفى" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Rubik:ital,wght@0,400;0,700;0,800;0,900;1,700;1,800;1,900&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crepe Corner Prototype</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Rubik:ital,wght@0,700;0,800;0,900;1,700;1,800;1,900&display=swap" rel="stylesheet">
+  
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    :root {
+      --cc-red: #a8160c;
+      --cc-red-deep: #7a0d05;
+      --cc-red-dark: #5a0902;
+      --cc-yellow: #f4b528;
+      --cc-yellow-soft: #fde6a8;
+      --cc-cream: #fbf3e6;
+      --cc-bg: #f5ece0;
+      --cc-ink: #1a0e08;
+      --cc-body: #5b4636;
+      --cc-muted: #9a8674;
+      --cc-rule: #ead8bf;
+      --cc-green: #1f7a3f;
+      --cc-hot: #e63a1c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #222;
+      color: var(--cc-ink);
+      font-family: 'Cairo', sans-serif;
+    }
+
+    .rubik {
+      font-family: 'Rubik', sans-serif;
+    }
+
+    /* Scrollbar styling for a cleaner look */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--cc-muted);
+      border-radius: 4px;
+    }
+    
+    .price-text {
+      font-family: 'Rubik', sans-serif;
+      font-style: italic;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+    .price-currency {
+      font-family: 'Cairo', sans-serif;
+      font-style: normal;
+      font-weight: 700;
+      font-size: 0.7em;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-type="module" src="crepe-data.jsx"></script>
+  <script type="text/babel" data-type="module" src="crepe-corner.jsx"></script>
+  <script type="text/babel" data-type="module" src="ios-frame.jsx"></script>
+  <script type="text/babel" data-type="module" src="design-canvas.jsx"></script>
+  <script type="text/babel" data-type="module" src="app.jsx"></script>
+</body>
 </html>
