@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "npx vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "npx serve docs -l $PORT"
   },
   "dependencies": {
     "react": "^18.3.1",
