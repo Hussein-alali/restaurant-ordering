@@ -87,34 +87,20 @@
     {
       "id": "5",
       "name": "Send WhatsApp (Cloud API)",
-      "type": "n8n-nodes-base.httpRequest",
+      "type": "n8n-nodes-base.whatsApp",
       "position": [920, 160],
-      "typeVersion": 4.2,
+      "typeVersion": 1,
       "parameters": {
-        "method": "POST",
-        "url": "=https://graph.facebook.com/v21.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.WHATSAPP_ACCESS_TOKEN }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $env.OWNER_PHONE_NUMBER, type: 'text', text: { preview_url: false, body: $json.message } }) }}",
-        "options": {
-          "response": {
-            "response": {
-              "neverError": false
-            }
-          }
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "={{ $env.WHATSAPP_PHONE_NUMBER_ID }}",
+        "recipientPhoneNumber": "={{ $env.OWNER_PHONE_NUMBER }}",
+        "textBody": "={{ $json.message }}"
+      },
+      "credentials": {
+        "whatsAppApi": {
+          "id": "1",
+          "name": "WhatsApp Cloud API"
         }
       }
     },
