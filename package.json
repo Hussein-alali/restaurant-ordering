@@ -6,9 +6,10 @@
     "dev": "vite",
     "build": "node ./node_modules/vite/bin/vite.js build",
     "preview": "vite preview",
-    "start": "npx serve docs -l $PORT"
+    "start": "serve docs -l $PORT"
   },
   "dependencies": {
+    "serve": "^14.2.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.14.2",
