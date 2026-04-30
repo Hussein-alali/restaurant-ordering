@@ -1,7 +1,10 @@
 import express from 'express'
 import cors from 'cors'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
 import { createOrder, getOrders, getOrderById, updateOrderStatus, getCustomers, getCustomerWithOrders } from './db.js'
 
+const __dirname = dirname(fileURLToPath(import.meta.url))
 const app = express()
 const PORT = process.env.PORT || 3001
 const N8N_URL = process.env.VITE_WEBHOOK_URL
@@ -169,6 +172,13 @@ setInterval(() => { if (document.querySelector('nav button.active').textContent.
 </script>
 </body>
 </html>`)
+})
+
+// Serve React build
+const staticDir = join(__dirname, '../docs')
+app.use(express.static(staticDir))
+app.get('*', (req, res) => {
+  res.sendFile(join(staticDir, 'index.html'))
 })
 
 app.listen(PORT, () => {
