@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
-import menuData, { ADDONS } from '../data/menu'
+import menuData, { ADDONS, ADDON_CATS } from '../data/menu'
 
 const C = {
   red:        '#a8160c',
@@ -20,7 +20,8 @@ const C = {
 
 const ar   = { fontFamily: '"Cairo", "Noto Naskh Arabic", system-ui, sans-serif' }
 const disp = { fontFamily: '"Rubik", "Cairo", system-ui, sans-serif' }
-const egp  = (n) => `${n} ج.م`
+const arNum = (n) => n.toLocaleString('ar-EG')
+const egp  = (n) => `${arNum(n)} ج.م`
 
 function Tag({ tag }) {
   if (tag === 'hot')       return <span style={{ ...ar, fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: '#fde2dc', color: C.hot }}>🌶 حار</span>
@@ -30,18 +31,51 @@ function Tag({ tag }) {
   return null
 }
 
+function AddonRow({ a, checked, onToggle, C, disp }) {
+  return (
+    <button
+      onClick={() => onToggle(a.name)}
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+        background: C.card, border: `1px solid ${checked ? C.red : C.rule}`,
+        borderRadius: 12, padding: '12px 14px', marginBottom: 8,
+        cursor: 'pointer', textAlign: 'right',
+      }}
+    >
+      <div style={{
+        width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+        border: `1.5px solid ${checked ? C.red : C.rule}`,
+        background: checked ? C.red : 'transparent',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {checked && (
+          <svg width="12" height="12" viewBox="0 0 12 12">
+            <path d="M2 6l3 3 5-6" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+      </div>
+      <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.ink }}>{a.name}</div>
+      <div style={{ ...disp, fontSize: 13, fontWeight: 800, color: C.red }}>+ {a.price.toLocaleString('ar-EG')} ج.م</div>
+    </button>
+  )
+}
+
 function ItemDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { dispatch } = useCart()
+  const location = useLocation()
+  const { state: cartState, dispatch } = useCart()
 
   const item = menuData.find(m => m.id === Number(id))
-
   const hasSizes = item?.sizes?.length > 0
-  const [selectedSize, setSelectedSize] = useState(() => item?.sizes?.[0]?.key ?? null)
-  const [selectedAddons, setSelectedAddons] = useState([])
-  const [qty, setQty] = useState(1)
-  const [note, setNote] = useState('')
+
+  const cartItemId = location.state?.cartItemId ?? null
+  const cartItem   = cartItemId ? cartState.items.find(i => i.id === cartItemId) : null
+
+  const [selectedSize, setSelectedSize] = useState(() => cartItem?.selectedSize ?? item?.sizes?.[0]?.key ?? null)
+  const [selectedAddons, setSelectedAddons] = useState(() => cartItem?.addons ?? [])
+  const [qty, setQty] = useState(() => cartItem?.quantity ?? 1)
+  const [note, setNote] = useState(() => cartItem?.userNote ?? '')
 
   if (!item) {
     return (
@@ -50,6 +84,8 @@ function ItemDetailPage() {
       </div>
     )
   }
+
+  const visibleAddons = ADDONS.filter(a => !a.cats || a.cats.includes(item.cat))
 
   const basePrice   = hasSizes
     ? (item.sizes.find(s => s.key === selectedSize)?.price ?? item.price)
@@ -67,17 +103,48 @@ function ItemDetailPage() {
     )
 
   const handleAddToCart = () => {
-    dispatch({
-      type: 'ADD_ITEM',
-      payload: {
-        ...item,
-        id: hasSizes ? `${item.id}-${selectedSize}` : item.id,
-        name: hasSizes && selectedSize ? `${item.name} (${selectedSize})` : item.name,
-        price: unitPrice,
-        quantity: qty,
-        note,
-      },
+    const friesAddons   = selectedAddons.filter(name => ADDONS.find(a => a.name === name)?.cat === 'fries')
+    const commentAddons = selectedAddons.filter(name => !friesAddons.includes(name))
+
+    const addonNote = commentAddons.length ? `إضافات: ${commentAddons.join(' · ')}` : ''
+    const fullNote  = [addonNote, note].filter(Boolean).join(' — ')
+
+    const baseAddonsPrice = commentAddons.reduce((s, name) => {
+      const a = ADDONS.find(a => a.name === name)
+      return s + (a?.price ?? 0)
+    }, 0)
+    const baseOnlyPrice = basePrice + baseAddonsPrice
+    const newId = hasSizes ? `${item.id}-${selectedSize}` : item.id
+
+    const payload = {
+      ...item,
+      id: newId,
+      name: hasSizes && selectedSize ? `${item.name} (${selectedSize})` : item.name,
+      price: baseOnlyPrice,
+      quantity: qty,
+      note: fullNote,
+      userNote: note,
+      addons: commentAddons,
+      selectedSize,
+    }
+
+    if (cartItem) {
+      if (cartItem.id !== newId) {
+        dispatch({ type: 'REMOVE_ITEM', payload: cartItem.id })
+        dispatch({ type: 'ADD_ITEM', payload: payload })
+      } else {
+        dispatch({ type: 'UPDATE_ITEM', payload: payload })
+      }
+    } else {
+      dispatch({ type: 'ADD_ITEM', payload: payload })
+    }
+
+    friesAddons.forEach(name => {
+      const a = ADDONS.find(a => a.name === name)
+      if (!a) return
+      dispatch({ type: 'ADD_ITEM', payload: { id: a.id, name: a.name, price: a.price, image: a.image, quantity: 1 } })
     })
+
     navigate(-1)
   }
 
@@ -123,7 +190,7 @@ function ItemDetailPage() {
         {/* Name + price */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 }}>
           <div style={{ flex: 1 }}>
-            <div style={{ ...ar, fontSize: 24, fontWeight: 900, color: C.ink, lineHeight: 1.2 }}>
+            <div style={{ ...ar, fontSize: 24, fontWeight: 900, color: C.ink, lineHeight: 1.2 , marginTop: 18, }}>
               {item.name}
             </div>
             {item.desc && (
@@ -137,14 +204,14 @@ function ItemDetailPage() {
             padding: '8px 14px', borderRadius: 12,
             fontSize: 20, fontWeight: 900, fontStyle: 'italic',
             display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1,
-            flexShrink: 0,
+            flexShrink: 0, marginTop: 10,
           }}>
-            <div>{basePrice}</div>
+            <div>{arNum(basePrice)}</div>
             <div style={{ fontSize: 10, marginTop: 2, color: C.yellow }}>ج.م</div>
           </div>
         </div>
 
-        {/* Size selector — only for pizza */}
+        {/* Size selector */}
         {hasSizes && (
           <div style={{ marginTop: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -183,36 +250,23 @@ function ItemDetailPage() {
             <div style={{ fontSize: 14, fontWeight: 800, color: C.ink }}>الإضافات</div>
             <div style={{ fontSize: 11, color: C.muted }}>اختياري</div>
           </div>
-          {ADDONS.map(a => {
-            const checked = selectedAddons.includes(a.name)
+
+          {/* Categorised addons (fries / sauces) */}
+          {ADDON_CATS.map(cat => {
+            const items = visibleAddons.filter(a => a.cat === cat.id)
+            if (!items.length) return null
             return (
-              <button
-                key={a.name}
-                onClick={() => toggleAddon(a.name)}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-                  background: C.card, border: `1px solid ${checked ? C.red : C.rule}`,
-                  borderRadius: 12, padding: '12px 14px', marginBottom: 8,
-                  cursor: 'pointer', textAlign: 'right',
-                }}
-              >
-                <div style={{
-                  width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                  border: `1.5px solid ${checked ? C.red : C.rule}`,
-                  background: checked ? C.red : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {checked && (
-                    <svg width="12" height="12" viewBox="0 0 12 12">
-                      <path d="M2 6l3 3 5-6" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                </div>
-                <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.ink }}>{a.name}</div>
-                <div style={{ ...disp, fontSize: 13, fontWeight: 800, color: C.red }}>+ {a.price} ج.م</div>
-              </button>
+              <div key={cat.id} style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: C.muted, marginBottom: 8 }}>{cat.ar}</div>
+                {items.map(a => <AddonRow key={a.id} a={a} checked={selectedAddons.includes(a.name)} onToggle={toggleAddon} C={C} disp={disp} />)}
+              </div>
             )
           })}
+
+          {/* Uncategorised addons (pizza-only / crepe-only) */}
+          {visibleAddons.filter(a => !a.cat).map(a =>
+            <AddonRow key={a.id} a={a} checked={selectedAddons.includes(a.name)} onToggle={toggleAddon} C={C} disp={disp} />
+          )}
         </div>
 
         {/* Notes */}
@@ -258,7 +312,7 @@ function ItemDetailPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >−</button>
-            <div style={{ fontSize: 15, fontWeight: 800, width: 24, textAlign: 'center', color: C.ink }}>{qty}</div>
+            <div style={{ fontSize: 15, fontWeight: 800, width: 24, textAlign: 'center', color: C.ink }}>{arNum(qty)}</div>
             <button
               onClick={() => setQty(q => q + 1)}
               style={{
@@ -278,7 +332,7 @@ function ItemDetailPage() {
               ...ar, fontSize: 14, fontWeight: 800,
             }}
           >
-            <span>أضف للسلة</span>
+            <span>{cartItem ? 'تحديث الطلب' : 'أضف للسلة'}</span>
             <span style={{ ...disp, fontSize: 16, fontWeight: 900, fontStyle: 'italic' }}>{egp(total)}</span>
           </button>
         </div>

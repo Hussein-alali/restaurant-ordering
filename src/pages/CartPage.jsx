@@ -2,10 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart, calculateTotal } from '../context/CartContext'
 import { ADDONS } from '../data/menu'
+import logoSrc from '/logo.png'
+import bgLogoSrc from '/background-logo.png'
 
 const C = {
   red:        '#a8160c',
   redDeep:    '#7a0d05',
+  redDark:    '#5a0902',
   yellow:     '#f4b528',
   yellowSoft: '#fde6a8',
   bg:         '#f5ece0',
@@ -19,14 +22,117 @@ const C = {
 
 const ar = { fontFamily: '"Cairo", "Noto Naskh Arabic", system-ui, sans-serif' }
 const disp = { fontFamily: '"Rubik", "Cairo", system-ui, sans-serif' }
-const egp = (n) => `${n} ج.م`
+const arNum = (n) => n.toLocaleString('ar-EG')
+const egp = (n) => `${arNum(n)} ج.م`
 
-const UPSELL = ADDONS.slice(0, 3) // باكت بطاطس, بطاطس شيدر, تشيكن كرسبي فرايز
+function CCLogo({ size = 48 }) {
+  return (
+    <img
+      src={logoSrc}
+      alt="Crepe Corner"
+      style={{ width: size, height: size, borderRadius: size / 2, objectFit: 'cover', flexShrink: 0 }}
+    />
+  )
+}
+
+const UPSELL = ADDONS.slice(0, 3)
 const UPSELL_IMGS = [
   'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=200&q=80',
   'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=200&q=80',
   'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=200&q=80',
 ]
+
+function EditSheet({ item, onClose, dispatch }) {
+  const [qty, setQty]   = useState(item.quantity)
+  const [note, setNote] = useState(item.note || '')
+
+  const save = () => {
+    if (qty <= 0) {
+      dispatch({ type: 'REMOVE_ITEM', payload: item.id })
+    } else {
+      dispatch({ type: 'UPDATE_ITEM', payload: { id: item.id, quantity: qty, note } })
+    }
+    onClose()
+  }
+
+  const remove = () => {
+    dispatch({ type: 'REMOVE_ITEM', payload: item.id })
+    onClose()
+  }
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 100 }}
+      />
+      {/* Sheet */}
+      <div dir="rtl" style={{
+        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 101,
+        background: C.bg, borderRadius: '22px 22px 0 0',
+        padding: '20px 18px 36px', ...ar,
+        boxShadow: '0 -8px 32px rgba(0,0,0,0.18)',
+      }}>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: C.rule, margin: '0 auto 20px' }} />
+
+        {/* Item header */}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 20 }}>
+          {item.image
+            ? <img src={item.image} alt={item.name} style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }} />
+            : <div style={{ width: 56, height: 56, borderRadius: 10, background: C.rule, flexShrink: 0 }} />
+          }
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: C.ink }}>{item.name}</div>
+            <div style={{ ...disp, fontSize: 13, color: C.red, fontWeight: 700, marginTop: 2 }}>{egp(item.price)}</div>
+          </div>
+        </div>
+
+        {/* Qty */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: C.ink }}>الكمية</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: C.card, borderRadius: 12, padding: 4, border: `1px solid ${C.rule}` }}>
+            <button onClick={() => setQty(q => Math.max(1, q - 1))}
+              style={{ width: 32, height: 32, borderRadius: 8, background: C.bg, border: 'none', cursor: 'pointer', fontSize: 16, fontWeight: 700, color: C.ink }}>−</button>
+            <div style={{ fontSize: 15, fontWeight: 800, width: 28, textAlign: 'center', color: C.ink }}>{arNum(qty)}</div>
+            <button onClick={() => setQty(q => q + 1)}
+              style={{ width: 32, height: 32, borderRadius: 8, background: C.bg, border: 'none', cursor: 'pointer', fontSize: 16, fontWeight: 700, color: C.ink }}>+</button>
+          </div>
+        </div>
+
+        {/* Note */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: C.ink, marginBottom: 8 }}>ملاحظات</div>
+          <textarea
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            placeholder="مثال: بدون بصل، حار جداً…"
+            rows={2}
+            style={{
+              width: '100%', background: C.card, border: `1px solid ${C.rule}`, borderRadius: 12,
+              padding: '10px 12px', fontSize: 13, color: C.ink, fontFamily: 'inherit',
+              resize: 'none', outline: 'none', boxSizing: 'border-box',
+            }}
+          />
+        </div>
+
+        {/* Actions */}
+        <button onClick={save} style={{
+          width: '100%', background: C.red, color: '#fff', border: 'none',
+          borderRadius: 14, padding: '14px 0', fontSize: 15, fontWeight: 800, cursor: 'pointer', marginBottom: 10,
+        }}>
+          حفظ التغييرات · {egp(item.price * qty)}
+        </button>
+        <button onClick={remove} style={{
+          width: '100%', background: 'transparent', color: C.red, border: `1px solid ${C.red}`,
+          borderRadius: 14, padding: '12px 0', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+        }}>
+          حذف من السلة
+        </button>
+      </div>
+    </>
+  )
+}
 
 function CartPage() {
   const { state, dispatch } = useCart()
@@ -36,7 +142,7 @@ function CartPage() {
 
   const total = calculateTotal(state.items)
   const itemCount = state.items.reduce((s, i) => s + i.quantity, 0)
-  const delivery = 15
+  const delivery = state.serviceType === 'توصيل' ? 15 : 0
 
   const update = (id, delta) => {
     const item = state.items.find(i => i.id === id)
@@ -46,6 +152,11 @@ function CartPage() {
   const remove = id => dispatch({ type: 'REMOVE_ITEM', payload: id })
 
   const setPayment = method => dispatch({ type: 'SET_PAYMENT_METHOD', payload: method })
+
+  const openItem = (cartItemId) => {
+    const m = String(cartItemId).match(/^(\d+)/)
+    if (m) navigate(`/item/${m[1]}`, { state: { cartItemId } })
+  }
 
   const addUpsell = (addon) => {
     dispatch({
@@ -81,25 +192,65 @@ function CartPage() {
     <div dir="rtl" style={{ background: C.bg, minHeight: '100vh', ...ar }}>
       {/* Header */}
       <div style={{
-        padding: '54px 18px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        background: C.red, color: '#fff',
+        background: `linear-gradient(180deg, ${C.redDark} 0%, ${C.red} 100%)`,
+        padding: '54px 18px 18px',
+        position: 'relative', overflow: 'hidden',
       }}>
-        <button
-          onClick={() => navigate('/')}
-          style={{
-            width: 38, height: 38, borderRadius: 19, background: 'rgba(255,255,255,0.18)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer',
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        </button>
-        <div style={{ fontSize: 17, fontWeight: 900 }}>السلة</div>
-        <button
-          onClick={() => { dispatch({ type: 'CLEAR_CART' }); navigate('/') }}
-          style={{ fontSize: 12, fontWeight: 700, color: C.yellow, background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          مسح الكل
-        </button>
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+          <img src={bgLogoSrc} alt="" style={{
+            position: 'absolute', left: -20, top: '50%', transform: 'translateY(-50%)',
+            width: 240, height: 240, objectFit: 'contain', opacity: 0.12,
+          }} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
+          <div onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+            <CCLogo size={64} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ ...disp, color: C.yellow, fontWeight: 800, fontSize: 18, letterSpacing: -0.3, fontStyle: 'italic' }}>
+              Crepe Corner
+            </div>
+            <div style={{ color: '#fff', fontSize: 11, opacity: 0.85, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span>📍</span> كفر صقر · شارع المستشفى
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/')}
+            style={{
+              width: 38, height: 38, borderRadius: 19, background: 'rgba(255,255,255,0.18)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', flexShrink: 0,
+            }}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round">
+              <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* Service toggle */}
+        <div style={{
+          marginTop: 14, background: 'rgba(0,0,0,0.25)', borderRadius: 12, padding: 4,
+          display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2,
+          position: 'relative',
+        }}>
+          {[{ key: 'توصيل', sub: '٣٠ د' }, { key: 'استلام', sub: '١٥ د' }, { key: 'داخل المحل', sub: 'QR' }].map(({ key, sub }) => {
+            const active = state.serviceType === key
+            return (
+              <button
+                key={key}
+                onClick={() => dispatch({ type: 'SET_SERVICE_TYPE', payload: key })}
+                style={{
+                  padding: '8px 6px', borderRadius: 9, textAlign: 'center',
+                  background: active ? C.yellow : 'transparent',
+                  border: 'none', cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 700, color: active ? C.ink : '#fff' }}>{key}</div>
+                <div style={{ fontSize: 9, color: active ? C.redDeep : 'rgba(255,255,255,0.7)', marginTop: 1, fontWeight: 600 }}>{sub}</div>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Address card */}
@@ -139,29 +290,33 @@ function CartPage() {
             background: C.card, border: `1px solid ${C.rule}`, borderRadius: 14,
             padding: 10, display: 'flex', gap: 12, alignItems: 'center',
           }}>
-            <div style={{
-              width: 60, height: 60, borderRadius: 10, flexShrink: 0,
-              backgroundImage: item.image ? `url(${item.image})` : 'none',
-              backgroundSize: 'cover', backgroundPosition: 'center',
-              background: item.image ? undefined : C.rule,
-            }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: C.ink, lineHeight: 1.2 }}>{item.name}</div>
-              {item.note && <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{item.note}</div>}
-              <div style={{ ...disp, fontSize: 15, fontWeight: 800, color: C.red, marginTop: 4, fontStyle: 'italic' }}>
-                {egp(item.price * item.quantity)}
+            <div
+              onClick={() => openItem(item.id)}
+              style={{ display: 'flex', gap: 12, alignItems: 'center', flex: 1, minWidth: 0, cursor: String(item.id).match(/^\d+/) ? 'pointer' : 'default' }}
+            >
+              {item.image ? (
+                <img src={item.image} alt={item.name} style={{ width: 60, height: 60, borderRadius: 10, flexShrink: 0, objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: 60, height: 60, borderRadius: 10, flexShrink: 0, background: C.rule }} />
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: C.ink, lineHeight: 1.2 }}>{item.name}</div>
+                {item.note && <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{item.note}</div>}
+                <div style={{ ...disp, fontSize: 15, fontWeight: 800, color: C.red, marginTop: 4, fontStyle: 'italic' }}>
+                  {egp(item.price * item.quantity)}
+                </div>
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, background: C.bg, borderRadius: 10, padding: 3 }}>
-              <button
-                onClick={() => update(item.id, 1)}
-                style={{ width: 28, height: 24, borderRadius: 7, background: C.card, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', color: C.ink }}
-              >+</button>
-              <div style={{ fontSize: 13, fontWeight: 800, padding: '2px 0', color: C.ink }}>{item.quantity}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: C.bg, borderRadius: 10, padding: 3 }}>
               <button
                 onClick={() => update(item.id, -1)}
-                style={{ width: 28, height: 24, borderRadius: 7, background: C.card, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', color: C.ink }}
+                style={{ width: 28, height: 28, borderRadius: 7, background: C.card, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', color: C.ink }}
               >−</button>
+              <div style={{ fontSize: 13, fontWeight: 800, padding: '0 6px', color: C.ink }}>{arNum(item.quantity)}</div>
+              <button
+                onClick={() => update(item.id, 1)}
+                style={{ width: 28, height: 28, borderRadius: 7, background: C.card, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', color: C.ink }}
+              >+</button>
             </div>
             <button
               onClick={() => remove(item.id)}
@@ -208,8 +363,7 @@ function CartPage() {
             onClick={() => setPromoOpen(true)}
             style={{
               width: '100%', background: C.yellowSoft, border: `1px dashed ${C.yellow}`, borderRadius: 12,
-              padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10,
-              cursor: 'pointer',
+              padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
             }}
           >
             <span style={{ fontSize: 16 }}>🎟</span>
@@ -225,10 +379,7 @@ function CartPage() {
               value={promoCode}
               onChange={e => setPromoCode(e.target.value)}
               placeholder="أدخل الكود"
-              style={{
-                flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                fontSize: 13, color: C.ink, fontFamily: 'inherit', textAlign: 'right',
-              }}
+              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: C.ink, fontFamily: 'inherit', textAlign: 'right' }}
             />
             <button style={{ fontSize: 13, fontWeight: 800, color: C.red, background: 'none', border: 'none', cursor: 'pointer' }}>
               تطبيق
@@ -251,8 +402,7 @@ function CartPage() {
                   background: sel ? C.ink : C.card,
                   color: sel ? '#fff' : C.ink,
                   border: sel ? 'none' : `1px solid ${C.rule}`,
-                  borderRadius: 11, padding: '10px 4px', textAlign: 'center',
-                  cursor: 'pointer',
+                  borderRadius: 11, padding: '10px 4px', textAlign: 'center', cursor: 'pointer',
                 }}
               >
                 <div style={{ fontSize: 16 }}>{icon}</div>
@@ -266,7 +416,7 @@ function CartPage() {
       {/* Summary */}
       <div style={{ padding: '14px 18px 140px' }}>
         <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 14, padding: '14px 16px' }}>
-          {[['المجموع الفرعي', egp(total)], ['التوصيل', egp(delivery)]].map(([k, v]) => (
+          {[['المجموع الفرعي', egp(total)], ...(delivery > 0 ? [['التوصيل', egp(delivery)]] : [])].map(([k, v]) => (
             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontSize: 13 }}>
               <span style={{ color: C.body, fontWeight: 600 }}>{k}</span>
               <span style={{ ...disp, color: C.ink, fontWeight: 700 }}>{v}</span>
@@ -295,7 +445,7 @@ function CartPage() {
           }}
         >
           <div>
-            <div style={{ fontSize: 11, color: '#fde6a8', fontWeight: 700 }}>الإجمالي · {itemCount} صنف</div>
+            <div style={{ fontSize: 11, color: '#fde6a8', fontWeight: 700 }}>الإجمالي · {arNum(itemCount)} صنف</div>
             <div style={{ ...disp, fontSize: 18, fontWeight: 900, fontStyle: 'italic', marginTop: 1 }}>
               {egp(total + delivery)}
             </div>

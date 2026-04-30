@@ -5,7 +5,8 @@ const CC_CATS = [
   { id: 'pizza', name: 'بيتزا' },
   { id: 'burger', name: 'برجر' },
   { id: 'shawarma', name: 'شاورما' },
-  { id: 'meals', name: 'وجبات' }
+  { id: 'meals', name: 'وجبات' },
+  { id: 'addations', name: 'الأضافات' }
 ];
 
 // Reusing some Unsplash food images

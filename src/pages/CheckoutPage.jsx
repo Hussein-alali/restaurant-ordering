@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart, calculateTotal, formatPayload, validateForm } from '../context/CartContext'
 
+const API_URL = import.meta.env.VITE_API_URL
 const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL || 'https://your-n8n-instance.com/webhook/restaurant-order'
 
 const C = {
@@ -19,7 +20,8 @@ const C = {
 
 const ar = { fontFamily: '"Cairo", "Noto Naskh Arabic", system-ui, sans-serif' }
 const disp = { fontFamily: '"Rubik", "Cairo", system-ui, sans-serif' }
-const egp = (n) => `${n} ج.م`
+const arNum = (n) => n.toLocaleString('ar-EG')
+const egp = (n) => `${arNum(n)} ج.م`
 
 function Field({ label, value, onChange, type = 'text', placeholder, error, optional }) {
   return (
@@ -79,12 +81,21 @@ function CheckoutPage() {
     setStatus('loading')
     const payload = formatPayload(state)
     try {
-      const res = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      if (API_URL) {
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      } else {
+        const res = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      }
       dispatch({ type: 'SET_LAST_ORDER', payload })
       dispatch({ type: 'CLEAR_CART' })
       navigate('/confirmation')
@@ -181,7 +192,6 @@ function CheckoutPage() {
           <>
             <div style={{ ...disp, fontSize: 22, fontWeight: 900, color: C.ink, marginBottom: 20 }}>مراجعة وتأكيد</div>
 
-            {/* Customer summary */}
             <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 14, padding: '14px 16px', marginBottom: 14 }}>
               <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, marginBottom: 8 }}>بياناتك</div>
               <div style={{ fontSize: 14, fontWeight: 800, color: C.ink }}>{state.customer.name}</div>
@@ -190,7 +200,6 @@ function CheckoutPage() {
               {state.customer.deliveryNotes && <div style={{ fontSize: 12, color: C.muted, fontStyle: 'italic', marginTop: 2 }}>{state.customer.deliveryNotes}</div>}
             </div>
 
-            {/* Order items */}
             <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 14, padding: '14px 16px', marginBottom: 14 }}>
               <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, marginBottom: 10 }}>طلبك</div>
               {state.items.map(item => (
@@ -210,7 +219,6 @@ function CheckoutPage() {
               ))}
             </div>
 
-            {/* Payment */}
             <div style={{ background: C.card, border: `1.5px solid ${C.ink}`, borderRadius: 14, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>
                 {state.paymentMethod === 'فودافون' ? '📱' : state.paymentMethod === 'إنستاباي' ? '🏦' : '💵'} {state.paymentMethod || 'كاش'}

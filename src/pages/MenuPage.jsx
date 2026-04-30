@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart, calculateTotal } from '../context/CartContext'
-import menuData, { CATS } from '../data/menu'
+import menuData, { CATS, ADDONS, ADDON_CATS } from '../data/menu'
 import logoSrc from '/logo.png'
+import bgLogoSrc from '/background-logo.png'
 
 const C = {
   red:        '#a8160c',
@@ -22,7 +23,8 @@ const C = {
 
 const ar = { fontFamily: '"Cairo", "Noto Naskh Arabic", system-ui, sans-serif' }
 const disp = { fontFamily: '"Rubik", "Cairo", system-ui, sans-serif' }
-const egp = (n) => `${n} ج.م`
+const arNum = (n) => n.toLocaleString('ar-EG')
+const egp = (n) => `${arNum(n)} ج.م`
 
 function CCLogo({ size = 48 }) {
   return (
@@ -35,10 +37,9 @@ function CCLogo({ size = 48 }) {
 }
 
 function WhatsAppButton({ phone }) {
-  const url = `https://wa.me/${phone}`
   return (
     <a
-      href={url}
+      href={`https://wa.me/${phone}`}
       target="_blank"
       rel="noopener noreferrer"
       style={{
@@ -113,8 +114,8 @@ function MenuPage() {
 
   const cartCount = state.items.reduce((s, i) => s + i.quantity, 0)
   const total = calculateTotal(state.items)
-
-  const items = menuData.filter(m => m.cat === activeCat)
+  const isAdditions = activeCat === 'additions'
+  const items = isAdditions ? [] : menuData.filter(m => m.cat === activeCat)
   const cat = CATS.find(c => c.id === activeCat)
 
   const serviceOptions = [
@@ -133,13 +134,14 @@ function MenuPage() {
         padding: '54px 18px 18px',
         position: 'relative', overflow: 'hidden',
       }}>
-        <div style={{
-          position: 'absolute', inset: 0,
-          backgroundImage: `radial-gradient(circle at 20% 30%, rgba(244,181,40,0.08) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.05) 0%, transparent 40%)`,
-          pointerEvents: 'none',
-        }} />
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+          <img src={bgLogoSrc} alt="" style={{
+            position: 'absolute', left: -20, top: '50%', transform: 'translateY(-50%)',
+            width: 240, height: 240, objectFit: 'contain', opacity: 0.12,
+          }} />
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
-          <CCLogo size={48} />
+          <CCLogo size={64} />
           <div style={{ flex: 1 }}>
             <div style={{ ...disp, color: C.yellow, fontWeight: 800, fontSize: 18, letterSpacing: -0.3, fontStyle: 'italic' }}>
               Crepe Corner
@@ -155,6 +157,7 @@ function MenuPage() {
         <div style={{
           marginTop: 14, background: 'rgba(0,0,0,0.25)', borderRadius: 12, padding: 4,
           display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2,
+          position: 'relative',
         }}>
           {serviceOptions.map(({ key, sub }) => {
             const active = state.serviceType === key
@@ -178,10 +181,14 @@ function MenuPage() {
 
       {/* Hero offer */}
       <div style={{ padding: '14px 18px 0' }}>
-        <div style={{
-          background: C.ink, borderRadius: 14, padding: '14px 16px',
-          display: 'flex', alignItems: 'center', gap: 12, position: 'relative', overflow: 'hidden',
-        }}>
+        <div
+          onClick={() => navigate('/item/20')}
+          style={{
+            background: C.ink, borderRadius: 14, padding: '14px 16px',
+            display: 'flex', alignItems: 'center', gap: 12, position: 'relative', overflow: 'hidden',
+            cursor: 'pointer',
+          }}
+        >
           <div style={{
             width: 60, height: 60, borderRadius: 12, flexShrink: 0,
             background: `url(https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&q=80) center/cover`,
@@ -199,10 +206,7 @@ function MenuPage() {
       </div>
 
       {/* Category strip */}
-      <div style={{
-        padding: '14px 0 6px', position: 'sticky', top: 0, zIndex: 5,
-        background: C.bg,
-      }}>
+      <div style={{ padding: '14px 0 6px', position: 'sticky', top: 0, zIndex: 5, background: C.bg }}>
         <div style={{ display: 'flex', gap: 8, padding: '0 18px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
           {CATS.map(c => (
             <button
@@ -224,10 +228,7 @@ function MenuPage() {
       </div>
 
       {/* Section header */}
-      <div style={{
-        padding: '14px 18px 12px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
+      <div style={{ padding: '14px 18px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{
           display: 'inline-block', background: C.red, color: '#fff',
           padding: '10px 22px 10px 28px',
@@ -237,21 +238,44 @@ function MenuPage() {
           {cat?.ar}
         </div>
         <div style={{ fontSize: 11, color: C.body, fontWeight: 600 }}>
-          {items.length} صنف
+          {isAdditions ? `${ADDONS.length} صنف` : `${items.length} صنف`}
         </div>
       </div>
 
       {/* Items */}
-      <div style={{ padding: '0 18px', paddingBottom: cartCount > 0 ? 120 : 32, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {items.map(item => <MenuRow key={item.id} item={item} onAdd={addToCart} onOpen={() => navigate(`/item/${item.id}`)} />)}
-      </div>
+      {isAdditions ? (
+        <div style={{ padding: '0 18px', paddingBottom: cartCount > 0 ? 120 : 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {ADDON_CATS.map(ac => {
+            const group = ADDONS.filter(a => a.cat === ac.id)
+            if (!group.length) return null
+            return (
+              <div key={ac.id}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: C.muted, marginBottom: 8 }}>{ac.ar}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {group.map(a => (
+                    <MenuRow
+                      key={a.id}
+                      item={{ ...a, tags: [] }}
+                      onAdd={() => addToCart({ id: a.id, name: a.name, price: a.price, image: a.image, tags: [], quantity: 1 })}
+                      onOpen={() => addToCart({ id: a.id, name: a.name, price: a.price, image: a.image, tags: [], quantity: 1 })}
+                    />
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div style={{ padding: '0 18px', paddingBottom: cartCount > 0 ? 120 : 32, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {items.map(item => (
+            <MenuRow key={item.id} item={item} onAdd={addToCart} onOpen={() => navigate(`/item/${item.id}`)} />
+          ))}
+        </div>
+      )}
 
       {/* Floating cart bar */}
       {cartCount > 0 && (
-        <div style={{
-          position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50,
-          padding: '0 16px 24px',
-        }}>
+        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50, padding: '0 16px 24px' }}>
           <button
             onClick={() => navigate('/cart')}
             style={{
@@ -267,7 +291,7 @@ function MenuPage() {
                 width: 32, height: 32, borderRadius: 10, background: C.yellow,
                 color: C.redDeep, fontSize: 14, fontWeight: 800,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>{cartCount}</div>
+              }}>{arNum(cartCount)}</div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 14, fontWeight: 800 }}>عرض السلة</div>
                 <div style={{ fontSize: 11, color: '#fde6a8', marginTop: 1 }}>{egp(total)} · {state.serviceType}</div>

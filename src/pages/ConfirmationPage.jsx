@@ -17,7 +17,8 @@ const C = {
 
 const ar = { fontFamily: '"Cairo", "Noto Naskh Arabic", system-ui, sans-serif' }
 const disp = { fontFamily: '"Rubik", "Cairo", system-ui, sans-serif' }
-const egp = (n) => `${n} ج.م`
+const arNum = (n) => n.toLocaleString('ar-EG')
+const egp = (n) => `${arNum(n)} ج.م`
 
 const TIMELINE = [
   { key: 'received', ar: 'استُلم الطلب',   desc: 'المطبخ شايف طلبك' },
