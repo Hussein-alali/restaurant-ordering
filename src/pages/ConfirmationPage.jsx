@@ -127,7 +127,7 @@ function ConfirmationPage() {
           {order.items.map((item, idx) => (
             <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 13 }}>
               <span style={{ color: C.body }}>
-                {item.name} <span style={{ color: C.muted }}>×{item.quantity}</span>
+                {item.name} <span style={{ color: C.muted }}>×{arNum(item.quantity)}</span>
               </span>
               <span style={{ color: C.ink, fontWeight: 700 }}>{egp(item.price * item.quantity)}</span>
             </div>

@@ -122,7 +122,7 @@ function CheckoutPage() {
           <svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
         <div style={{ fontSize: 17, fontWeight: 900 }}>{step === 1 ? 'بيانات التوصيل' : 'مراجعة الطلب'}</div>
-        <div style={{ fontSize: 12, color: C.yellowSoft, fontWeight: 700 }}>خطوة {step} / ٢</div>
+        <div style={{ fontSize: 12, color: C.yellowSoft, fontWeight: 700 }}>خطوة {arNum(step)} / ٢</div>
       </div>
 
       {/* Step dots */}
@@ -194,7 +194,7 @@ function CheckoutPage() {
               {state.items.map(item => (
                 <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontSize: 13 }}>
                   <span style={{ color: C.body }}>
-                    {item.name} <span style={{ color: C.muted }}>×{item.quantity}</span>
+                    {item.name} <span style={{ color: C.muted }}>×{arNum(item.quantity)}</span>
                   </span>
                   <span style={{ ...disp, color: C.ink, fontWeight: 700 }}>{egp(item.price * item.quantity)}</span>
                 </div>

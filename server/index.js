@@ -11,7 +11,10 @@ const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TG_CHAT  = process.env.TELEGRAM_CHAT_ID
 
 async function sendTelegram(orderId, orderNumber, data) {
-  if (!TG_TOKEN || !TG_CHAT) return
+  if (!TG_TOKEN || !TG_CHAT) {
+    console.error('Telegram: missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID')
+    return
+  }
   const { customerName, phone, address, items, totalPrice, deliveryNotes, serviceType, paymentMethod } = data
 
   const itemLines = items
@@ -19,18 +22,18 @@ async function sendTelegram(orderId, orderNumber, data) {
     .join('\n')
 
   const lines = [
-    '🍽️ *طلب جديد\\!*',
-    `🔢 *${orderNumber}*`,
+    '🍽️ <b>طلب جديد!</b>',
+    `🔢 <b>${orderNumber}</b>`,
     '',
-    '👤 *العميل*',
+    '👤 <b>العميل</b>',
     `الاسم: ${customerName}`,
     `📞 ${phone}`,
   ]
   if (address)       lines.push(`📍 ${address}`)
   if (serviceType)   lines.push(`النوع: ${serviceType}`)
   if (paymentMethod) lines.push(`الدفع: ${paymentMethod}`)
-  if (deliveryNotes) lines.push(`📝 _${deliveryNotes}_`)
-  lines.push('', '📦 *الأصناف*', itemLines, '', `💰 *الإجمالي: ${Number(totalPrice) + 15} ج\\.م*`)
+  if (deliveryNotes) lines.push(`📝 <i>${deliveryNotes}</i>`)
+  lines.push('', '📦 <b>الأصناف</b>', itemLines, '', `💰 <b>الإجمالي: ${Number(totalPrice) + 15} ج.م</b>`)
 
   const keyboard = {
     inline_keyboard: [
@@ -45,16 +48,23 @@ async function sendTelegram(orderId, orderNumber, data) {
     ],
   }
 
-  await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+  const res  = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: TG_CHAT,
       text: lines.join('\n'),
-      parse_mode: 'MarkdownV2',
+      parse_mode: 'HTML',
       reply_markup: keyboard,
     }),
-  }).catch(err => console.error('Telegram error:', err.message))
+  }).catch(err => { console.error('Telegram fetch error:', err.message); return null })
+
+  if (res && !res.ok) {
+    const err = await res.json().catch(() => ({}))
+    console.error('Telegram API error:', JSON.stringify(err))
+  } else {
+    console.log(`✅ Telegram sent for order ${orderNumber}`)
+  }
 }
 
 app.use(cors())
