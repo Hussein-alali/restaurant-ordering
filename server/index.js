@@ -20,7 +20,7 @@ app.post('/api/orders', async (req, res) => {
       return res.status(400).json({ error: 'بيانات ناقصة' })
     }
 
-    const { id, orderNumber } = createOrder(data)
+    const { id, orderNumber } = await createOrder(data)
 
     // Forward to n8n if configured (fire-and-forget)
     if (N8N_URL) {
@@ -38,33 +38,33 @@ app.post('/api/orders', async (req, res) => {
   }
 })
 
-app.get('/api/orders', (req, res) => {
+app.get('/api/orders', async (req, res) => {
   const { limit, offset, status } = req.query
-  res.json(getOrders({ limit: Number(limit) || 50, offset: Number(offset) || 0, status }))
+  res.json(await getOrders({ limit: Number(limit) || 50, offset: Number(offset) || 0, status }))
 })
 
-app.get('/api/orders/:id', (req, res) => {
-  const order = getOrderById(Number(req.params.id))
+app.get('/api/orders/:id', async (req, res) => {
+  const order = await getOrderById(Number(req.params.id))
   if (!order) return res.status(404).json({ error: 'الطلب مش موجود' })
   res.json(order)
 })
 
-app.patch('/api/orders/:id/status', (req, res) => {
+app.patch('/api/orders/:id/status', async (req, res) => {
   const { status } = req.body
   const valid = ['pending', 'preparing', 'on_the_way', 'delivered', 'cancelled']
   if (!valid.includes(status)) return res.status(400).json({ error: 'status غير صحيح' })
-  updateOrderStatus(Number(req.params.id), status)
+  await updateOrderStatus(Number(req.params.id), status)
   res.json({ ok: true })
 })
 
 // ─── Customers ───────────────────────────────────────────
-app.get('/api/customers', (req, res) => {
+app.get('/api/customers', async (req, res) => {
   const { limit, offset } = req.query
-  res.json(getCustomers({ limit: Number(limit) || 50, offset: Number(offset) || 0 }))
+  res.json(await getCustomers({ limit: Number(limit) || 50, offset: Number(offset) || 0 }))
 })
 
-app.get('/api/customers/:id', (req, res) => {
-  const customer = getCustomerWithOrders(Number(req.params.id))
+app.get('/api/customers/:id', async (req, res) => {
+  const customer = await getCustomerWithOrders(Number(req.params.id))
   if (!customer) return res.status(404).json({ error: 'العميل مش موجود' })
   res.json(customer)
 })
@@ -177,7 +177,7 @@ setInterval(() => { if (document.querySelector('nav button.active').textContent.
 // Serve React build
 const staticDir = join(__dirname, '../docs')
 app.use(express.static(staticDir))
-app.get('*', (req, res) => {
+app.use((req, res) => {
   res.sendFile(join(staticDir, 'index.html'))
 })
 

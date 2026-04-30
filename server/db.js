@@ -1,25 +1,22 @@
-import Database from 'better-sqlite3'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
+import pg from 'pg'
+const { Pool } = pg
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const db = new Database(join(__dirname, 'orders.db'))
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+})
 
-db.pragma('journal_mode = WAL')
-db.pragma('foreign_keys = ON')
-
-db.exec(`
+await pool.query(`
   CREATE TABLE IF NOT EXISTS customers (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    id          SERIAL PRIMARY KEY,
     name        TEXT    NOT NULL,
-    phone       TEXT    NOT NULL,
+    phone       TEXT    NOT NULL UNIQUE,
     address     TEXT,
-    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(phone)
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
 
   CREATE TABLE IF NOT EXISTS orders (
-    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    id             SERIAL PRIMARY KEY,
     order_number   TEXT    NOT NULL UNIQUE,
     customer_id    INTEGER REFERENCES customers(id),
     customer_name  TEXT    NOT NULL,
@@ -33,74 +30,74 @@ db.exec(`
     total          INTEGER NOT NULL,
     delivery_notes TEXT,
     status         TEXT    NOT NULL DEFAULT 'pending',
-    created_at     DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
 `)
 
-export function upsertCustomer({ name, phone, address }) {
-  const existing = db.prepare('SELECT id FROM customers WHERE phone = ?').get(phone)
-  if (existing) {
-    db.prepare('UPDATE customers SET name = ?, address = ? WHERE phone = ?').run(name, address || null, phone)
-    return existing.id
-  }
-  const result = db.prepare('INSERT INTO customers (name, phone, address) VALUES (?, ?, ?)').run(name, phone, address || null)
-  return result.lastInsertRowid
+export async function upsertCustomer({ name, phone, address }) {
+  const { rows } = await pool.query(
+    `INSERT INTO customers (name, phone, address) VALUES ($1, $2, $3)
+     ON CONFLICT (phone) DO UPDATE SET name = $1, address = $3
+     RETURNING id`,
+    [name, phone, address || null],
+  )
+  return rows[0].id
 }
 
-export function createOrder(data) {
+export async function createOrder(data) {
   const orderNumber = Date.now().toString(36).toUpperCase()
-  const customerId = upsertCustomer({ name: data.customerName, phone: data.phone, address: data.address })
+  const customerId = await upsertCustomer({ name: data.customerName, phone: data.phone, address: data.address })
   const subtotal = data.totalPrice
   const deliveryFee = 15
-  const result = db.prepare(`
-    INSERT INTO orders
-      (order_number, customer_id, customer_name, phone, address, service_type, payment_method, items, subtotal, delivery_fee, total, delivery_notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    orderNumber,
-    customerId,
-    data.customerName,
-    data.phone,
-    data.address || null,
-    data.serviceType,
-    data.paymentMethod || 'كاش',
-    JSON.stringify(data.items),
-    subtotal,
-    deliveryFee,
-    subtotal + deliveryFee,
-    data.deliveryNotes || null,
+  const { rows } = await pool.query(
+    `INSERT INTO orders
+       (order_number, customer_id, customer_name, phone, address, service_type, payment_method, items, subtotal, delivery_fee, total, delivery_notes)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+     RETURNING id`,
+    [
+      orderNumber, customerId, data.customerName, data.phone, data.address || null,
+      data.serviceType, data.paymentMethod || 'كاش', JSON.stringify(data.items),
+      subtotal, deliveryFee, subtotal + deliveryFee, data.deliveryNotes || null,
+    ],
   )
-  return { id: result.lastInsertRowid, orderNumber }
+  return { id: rows[0].id, orderNumber }
 }
 
-export function getOrders({ limit = 50, offset = 0, status } = {}) {
+export async function getOrders({ limit = 50, offset = 0, status } = {}) {
   let q = 'SELECT * FROM orders'
   const params = []
-  if (status) { q += ' WHERE status = ?'; params.push(status) }
-  q += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+  if (status) { q += ` WHERE status = $1`; params.push(status) }
+  q += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`
   params.push(limit, offset)
-  return db.prepare(q).all(...params).map(r => ({ ...r, items: JSON.parse(r.items) }))
+  const { rows } = await pool.query(q, params)
+  return rows.map(r => ({ ...r, items: JSON.parse(r.items) }))
 }
 
-export function getOrderById(id) {
-  const r = db.prepare('SELECT * FROM orders WHERE id = ?').get(id)
-  return r ? { ...r, items: JSON.parse(r.items) } : null
+export async function getOrderById(id) {
+  const { rows } = await pool.query('SELECT * FROM orders WHERE id = $1', [id])
+  return rows[0] ? { ...rows[0], items: JSON.parse(rows[0].items) } : null
 }
 
-export function updateOrderStatus(id, status) {
-  return db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, id)
+export async function updateOrderStatus(id, status) {
+  await pool.query('UPDATE orders SET status = $1 WHERE id = $2', [status, id])
 }
 
-export function getCustomers({ limit = 50, offset = 0 } = {}) {
-  return db.prepare('SELECT * FROM customers ORDER BY created_at DESC LIMIT ? OFFSET ?').all(limit, offset)
+export async function getCustomers({ limit = 50, offset = 0 } = {}) {
+  const { rows } = await pool.query(
+    'SELECT * FROM customers ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+    [limit, offset],
+  )
+  return rows
 }
 
-export function getCustomerWithOrders(id) {
-  const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(id)
-  if (!customer) return null
-  const orders = db.prepare('SELECT * FROM orders WHERE customer_id = ? ORDER BY created_at DESC').all(id)
-    .map(r => ({ ...r, items: JSON.parse(r.items) }))
-  return { ...customer, orders }
+export async function getCustomerWithOrders(id) {
+  const { rows: customerRows } = await pool.query('SELECT * FROM customers WHERE id = $1', [id])
+  if (!customerRows[0]) return null
+  const { rows: orderRows } = await pool.query(
+    'SELECT * FROM orders WHERE customer_id = $1 ORDER BY created_at DESC',
+    [id],
+  )
+  return { ...customerRows[0], orders: orderRows.map(r => ({ ...r, items: JSON.parse(r.items) })) }
 }
 
-export default db
+export default pool
