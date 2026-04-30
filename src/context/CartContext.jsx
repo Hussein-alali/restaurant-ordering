@@ -94,7 +94,7 @@ function cartReducer(state, action) {
         lastOrder: action.payload,
       }
     case 'RESET':
-      return initialState
+      return buildInitialState()
     default:
       return state
   }

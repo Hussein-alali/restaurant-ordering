@@ -186,12 +186,23 @@ function LastOrderBanner({ orderId, orderNumber, navigate }) {
 function MenuPage() {
   const { state, dispatch } = useCart()
   const [activeCat, setActiveCat] = useState(CATS[0].id)
+  const [unavailable, setUnavailable] = useState(new Set())
   const navigate = useNavigate()
+
+  useEffect(() => {
+    fetch('/api/products')
+      .then(r => r.ok ? r.json() : [])
+      .then(products => {
+        const names = new Set(products.filter(p => !p.available).map(p => p.name))
+        setUnavailable(names)
+      })
+      .catch(() => {})
+  }, [])
 
   const cartCount = state.items.reduce((s, i) => s + i.quantity, 0)
   const total = calculateTotal(state.items)
   const isAdditions = activeCat === 'additions'
-  const items = isAdditions ? [] : menuData.filter(m => m.cat === activeCat)
+  const items = isAdditions ? [] : menuData.filter(m => m.cat === activeCat && !unavailable.has(m.name))
   const cat = CATS.find(c => c.id === activeCat)
 
   const serviceOptions = [
@@ -329,7 +340,7 @@ function MenuPage() {
       {isAdditions ? (
         <div style={{ padding: '0 18px', paddingBottom: cartCount > 0 ? 120 : 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
           {ADDON_CATS.map(ac => {
-            const group = ADDONS.filter(a => a.cat === ac.id)
+            const group = ADDONS.filter(a => a.cat === ac.id && !unavailable.has(a.name))
             if (!group.length) return null
             return (
               <div key={ac.id}>
