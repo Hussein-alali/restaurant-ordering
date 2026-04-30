@@ -1,6 +1,11 @@
 import pg from 'pg'
 const { Pool } = pg
 
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL is not set. Add a PostgreSQL service in Railway and reference its DATABASE_URL variable.')
+  process.exit(1)
+}
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
