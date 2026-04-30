@@ -1,0 +1,264 @@
+{
+  "name": "🤖 Crepe Corner — Telegram Admin Bot",
+  "nodes": [
+    {
+      "id": "tg-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [200, 300],
+      "typeVersion": 1.1,
+      "parameters": {
+        "updates": ["message", "callback_query"]
+      },
+      "credentials": { "telegramApi": { "id": "telegram-cred", "name": "Telegram Bot" } }
+    },
+
+    {
+      "id": "if-callback",
+      "name": "Is Callback?",
+      "type": "n8n-nodes-base.if",
+      "position": [440, 300],
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": { "typeValidation": "loose" },
+          "conditions": [{ "id": "cb1", "leftValue": "={{ $json.callback_query }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty" } }],
+          "combinator": "and"
+        }
+      }
+    },
+
+    {
+      "id": "parse-callback",
+      "name": "Parse Callback",
+      "type": "n8n-nodes-base.code",
+      "position": [680, 160],
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const cbq = $input.first().json.callback_query;\nconst [, orderId, newStatus] = cbq.data.split(':');\nreturn [{ json: {\n  orderId,\n  newStatus,\n  chatId: String(cbq.message.chat.id),\n  callbackId: cbq.id,\n  messageId: cbq.message.message_id\n} }];"
+      }
+    },
+    {
+      "id": "update-status",
+      "name": "Update Order Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [920, 160],
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.API_BASE_URL }}/api/orders/{{ $json.orderId }}/status",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={{ JSON.stringify({ status: $json.newStatus }) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "answer-callback",
+      "name": "Answer Callback",
+      "type": "n8n-nodes-base.telegram",
+      "position": [1160, 160],
+      "typeVersion": 1.2,
+      "parameters": {
+        "resource": "callback",
+        "operation": "answerQuery",
+        "queryId": "={{ $('Parse Callback').item.json.callbackId }}",
+        "text": "={{ { preparing: '👨‍🍳 جاري التحضير', on_the_way: '🛵 في الطريق', delivered: '✅ تم التوصيل', cancelled: '🚫 ملغي' }[$('Parse Callback').item.json.newStatus] || 'تم التحديث' }}",
+        "additionalFields": { "show_alert": false }
+      },
+      "credentials": { "telegramApi": { "id": "telegram-cred", "name": "Telegram Bot" } }
+    },
+
+    {
+      "id": "parse-command",
+      "name": "Parse Command",
+      "type": "n8n-nodes-base.code",
+      "position": [680, 440],
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const msg = $input.first().json.message;\nconst text = (msg?.text || '').trim();\nconst parts = text.split(/\\s+/);\nconst cmd = parts[0]?.toLowerCase() || '';\nconst arg = parts.slice(1).join(' ').trim();\nconst chatId = String(msg.chat.id);\nlet type = 'help';\nif (cmd === '/orders' || cmd === '/طلبات') type = 'orders';\nelse if (cmd === '/summary' || cmd === '/ملخص') type = 'summary';\nelse if ((cmd === '/customer' || cmd === '/عميل') && arg) type = 'customer';\nreturn [{ json: { type, arg, chatId } }];"
+      }
+    },
+    {
+      "id": "switch-cmd",
+      "name": "Route Command",
+      "type": "n8n-nodes-base.switch",
+      "position": [920, 440],
+      "typeVersion": 3,
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "rules": [
+            { "outputKey": "0", "conditions": { "options": { "typeValidation": "loose" }, "conditions": [{ "id": "r1", "leftValue": "={{ $json.type }}", "rightValue": "orders", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } },
+            { "outputKey": "1", "conditions": { "options": { "typeValidation": "loose" }, "conditions": [{ "id": "r2", "leftValue": "={{ $json.type }}", "rightValue": "summary", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } },
+            { "outputKey": "2", "conditions": { "options": { "typeValidation": "loose" }, "conditions": [{ "id": "r3", "leftValue": "={{ $json.type }}", "rightValue": "customer", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } }
+          ]
+        },
+        "fallbackOutput": "extra"
+      }
+    },
+
+    {
+      "id": "get-orders",
+      "name": "Get Orders",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1160, 300],
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_BASE_URL }}/api/orders",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "limit", "value": "20" },
+            { "name": "status", "value": "={{ $('Parse Command').item.json.arg || '' }}" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-orders",
+      "name": "Format Orders",
+      "type": "n8n-nodes-base.code",
+      "position": [1400, 300],
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const orders = $input.first().json;\nconst chatId = $('Parse Command').item.json.chatId;\nconst statusAr = { pending: '⏳ انتظار', preparing: '👨‍🍳 تحضير', on_the_way: '🛵 في الطريق', delivered: '✅ تم', cancelled: '🚫 ملغي' };\nif (!orders.length) return [{ json: { chatId, text: 'لا توجد طلبات.' } }];\nconst lines = orders.slice(0, 10).map(o => {\n  const items = (Array.isArray(o.items) ? o.items : JSON.parse(o.items)).map(i => `${i.name} ×${i.quantity}`).join('، ');\n  return `*#${o.order_number}* — ${o.customer_name}\\n📞 ${o.phone} | ${o.total} ج.م | ${statusAr[o.status] || o.status}\\n${items}`;\n}).join('\\n\\n');\nconst filterLabel = $('Parse Command').item.json.arg ? ` (${statusAr[$('Parse Command').item.json.arg] || $('Parse Command').item.json.arg})` : '';\nreturn [{ json: { chatId, text: `📋 *آخر الطلبات${filterLabel}*\\n\\n${lines}` } }];"
+      }
+    },
+    {
+      "id": "send-orders",
+      "name": "Send Orders",
+      "type": "n8n-nodes-base.telegram",
+      "position": [1640, 300],
+      "typeVersion": 1.2,
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "credentials": { "telegramApi": { "id": "telegram-cred", "name": "Telegram Bot" } }
+    },
+
+    {
+      "id": "get-summary",
+      "name": "Get All Orders",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1160, 440],
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_BASE_URL }}/api/orders?limit=500",
+        "options": {}
+      }
+    },
+    {
+      "id": "format-summary",
+      "name": "Format Summary",
+      "type": "n8n-nodes-base.code",
+      "position": [1400, 440],
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const orders = $input.first().json;\nconst chatId = $('Parse Command').item.json.chatId;\nconst statusAr = { pending: '⏳ قيد الانتظار', preparing: '👨‍🍳 جاري التحضير', on_the_way: '🛵 في الطريق', delivered: '✅ تم التوصيل', cancelled: '🚫 ملغي' };\nconst total = orders.reduce((s, o) => s + Number(o.total), 0);\nconst byStatus = {};\norders.forEach(o => { if (!byStatus[o.status]) byStatus[o.status] = { count: 0, total: 0 }; byStatus[o.status].count++; byStatus[o.status].total += Number(o.total); });\nconst lines = Object.entries(byStatus).map(([s, v]) => `${statusAr[s] || s}: *${v.count}* طلب — *${v.total}* ج.م`).join('\\n');\nconst text = `📊 *ملخص الطلبات*\\n\\n${lines}\\n\\n💰 *الإجمالي الكلي: ${total.toLocaleString()} ج.م*\\n📦 *عدد الطلبات: ${orders.length}*`;\nreturn [{ json: { chatId, text } }];"
+      }
+    },
+    {
+      "id": "send-summary",
+      "name": "Send Summary",
+      "type": "n8n-nodes-base.telegram",
+      "position": [1640, 440],
+      "typeVersion": 1.2,
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "credentials": { "telegramApi": { "id": "telegram-cred", "name": "Telegram Bot" } }
+    },
+
+    {
+      "id": "get-customer",
+      "name": "Get Customer",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1160, 580],
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_BASE_URL }}/api/customers/by-phone/{{ $('Parse Command').item.json.arg }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "format-customer",
+      "name": "Format Customer",
+      "type": "n8n-nodes-base.code",
+      "position": [1400, 580],
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const data = $input.first().json;\nconst chatId = $('Parse Command').item.json.chatId;\nif (data.error) return [{ json: { chatId, text: '❌ العميل مش موجود. تأكد من رقم التليفون.' } }];\nconst statusAr = { pending: '⏳', preparing: '👨‍🍳', on_the_way: '🛵', delivered: '✅', cancelled: '🚫' };\nconst orders = data.orders || [];\nconst totalSpent = orders.reduce((s, o) => s + Number(o.total), 0);\nconst orderLines = orders.slice(0, 5).map(o => {\n  const items = (Array.isArray(o.items) ? o.items : JSON.parse(o.items)).map(i => `${i.name} ×${i.quantity}`).join('، ');\n  return `${statusAr[o.status] || ''} *#${o.order_number}* — ${o.total} ج.م\\n${items}`;\n}).join('\\n\\n');\nconst text = [\n  `👤 *${data.name}*`,\n  `📞 ${data.phone}`,\n  data.address ? `📍 ${data.address}` : '',\n  '',\n  `📦 عدد الطلبات: *${orders.length}*`,\n  `💰 إجمالي الإنفاق: *${totalSpent} ج.م*`,\n  orders.length ? `\\n*آخر الطلبات:*\\n\\n${orderLines}` : ''\n].filter(Boolean).join('\\n');\nreturn [{ json: { chatId, text } }];"
+      }
+    },
+    {
+      "id": "send-customer",
+      "name": "Send Customer",
+      "type": "n8n-nodes-base.telegram",
+      "position": [1640, 580],
+      "typeVersion": 1.2,
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "credentials": { "telegramApi": { "id": "telegram-cred", "name": "Telegram Bot" } }
+    },
+
+    {
+      "id": "send-help",
+      "name": "Send Help",
+      "type": "n8n-nodes-base.telegram",
+      "position": [1160, 700],
+      "typeVersion": 1.2,
+      "parameters": {
+        "chatId": "={{ $('Parse Command').item.json.chatId }}",
+        "text": "🤖 *Crepe Corner Bot*\\n\\nالأوامر المتاحة:\\n\\n`/orders` — آخر 20 طلب\\n`/orders pending` — فلتر بالحالة\\n`/summary` — ملخص وإجماليات\\n`/customer 01012345678` — بيانات عميل وطلباته\\n\\nالحالات المتاحة للفلتر:\\n`pending` `preparing` `on_the_way` `delivered` `cancelled`",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "credentials": { "telegramApi": { "id": "telegram-cred", "name": "Telegram Bot" } }
+    }
+  ],
+
+  "connections": {
+    "Telegram Trigger": { "main": [[{ "node": "Is Callback?", "type": "main", "index": 0 }]] },
+    "Is Callback?": {
+      "main": [
+        [{ "node": "Parse Callback", "type": "main", "index": 0 }],
+        [{ "node": "Parse Command",  "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse Callback":    { "main": [[{ "node": "Update Order Status", "type": "main", "index": 0 }]] },
+    "Update Order Status": { "main": [[{ "node": "Answer Callback", "type": "main", "index": 0 }]] },
+    "Parse Command": { "main": [[{ "node": "Route Command", "type": "main", "index": 0 }]] },
+    "Route Command": {
+      "main": [
+        [{ "node": "Get Orders",    "type": "main", "index": 0 }],
+        [{ "node": "Get All Orders","type": "main", "index": 0 }],
+        [{ "node": "Get Customer",  "type": "main", "index": 0 }],
+        [{ "node": "Send Help",     "type": "main", "index": 0 }]
+      ]
+    },
+    "Get Orders":    { "main": [[{ "node": "Format Orders",   "type": "main", "index": 0 }]] },
+    "Format Orders": { "main": [[{ "node": "Send Orders",     "type": "main", "index": 0 }]] },
+    "Get All Orders":  { "main": [[{ "node": "Format Summary", "type": "main", "index": 0 }]] },
+    "Format Summary":  { "main": [[{ "node": "Send Summary",   "type": "main", "index": 0 }]] },
+    "Get Customer":    { "main": [[{ "node": "Format Customer","type": "main", "index": 0 }]] },
+    "Format Customer": { "main": [[{ "node": "Send Customer",  "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

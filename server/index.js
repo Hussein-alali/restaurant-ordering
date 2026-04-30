@@ -2,12 +2,60 @@ import express from 'express'
 import cors from 'cors'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { createOrder, getOrders, getOrderById, updateOrderStatus, getCustomers, getCustomerWithOrders } from './db.js'
+import { createOrder, getOrders, getOrderById, updateOrderStatus, getCustomers, getCustomerWithOrders, getCustomerByPhone } from './db.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const app = express()
 const PORT = process.env.PORT || 3001
-const N8N_URL = process.env.VITE_WEBHOOK_URL
+const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+const TG_CHAT  = process.env.TELEGRAM_CHAT_ID
+
+async function sendTelegram(orderId, orderNumber, data) {
+  if (!TG_TOKEN || !TG_CHAT) return
+  const { customerName, phone, address, items, totalPrice, deliveryNotes, serviceType, paymentMethod } = data
+
+  const itemLines = items
+    .map(i => `• ${i.name} ×${i.quantity} — ${Number(i.price) * Number(i.quantity)} ج.م`)
+    .join('\n')
+
+  const lines = [
+    '🍽️ *طلب جديد\\!*',
+    `🔢 *${orderNumber}*`,
+    '',
+    '👤 *العميل*',
+    `الاسم: ${customerName}`,
+    `📞 ${phone}`,
+  ]
+  if (address)       lines.push(`📍 ${address}`)
+  if (serviceType)   lines.push(`النوع: ${serviceType}`)
+  if (paymentMethod) lines.push(`الدفع: ${paymentMethod}`)
+  if (deliveryNotes) lines.push(`📝 _${deliveryNotes}_`)
+  lines.push('', '📦 *الأصناف*', itemLines, '', `💰 *الإجمالي: ${Number(totalPrice) + 15} ج\\.م*`)
+
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: '👨‍🍳 جاري التحضير', callback_data: `st:${orderId}:preparing` },
+        { text: '🛵 في الطريق',      callback_data: `st:${orderId}:on_the_way` },
+      ],
+      [
+        { text: '✅ تم التوصيل', callback_data: `st:${orderId}:delivered` },
+        { text: '🚫 ملغي',       callback_data: `st:${orderId}:cancelled` },
+      ],
+    ],
+  }
+
+  await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: TG_CHAT,
+      text: lines.join('\n'),
+      parse_mode: 'MarkdownV2',
+      reply_markup: keyboard,
+    }),
+  }).catch(err => console.error('Telegram error:', err.message))
+}
 
 app.use(cors())
 app.use(express.json())
@@ -22,14 +70,7 @@ app.post('/api/orders', async (req, res) => {
 
     const { id, orderNumber } = await createOrder(data)
 
-    // Forward to n8n if configured (fire-and-forget)
-    if (N8N_URL) {
-      fetch(N8N_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, orderNumber }),
-      }).catch(() => {})
-    }
+    sendTelegram(id, orderNumber, data)
 
     res.status(201).json({ id, orderNumber })
   } catch (err) {
@@ -57,10 +98,84 @@ app.patch('/api/orders/:id/status', async (req, res) => {
   res.json({ ok: true })
 })
 
+// ─── Telegram Bot Webhook ────────────────────────────────
+app.post('/telegram-webhook', async (req, res) => {
+  res.sendStatus(200)
+  const update = req.body
+  const STATUS_AR = { preparing: '👨‍🍳 جاري التحضير', on_the_way: '🛵 في الطريق', delivered: '✅ تم التوصيل', cancelled: '🚫 ملغي' }
+
+  if (update.callback_query) {
+    const cbq = update.callback_query
+    const [, orderId, newStatus] = cbq.data.split(':')
+    if (orderId && newStatus) {
+      await updateOrderStatus(Number(orderId), newStatus).catch(() => {})
+      await fetch(`https://api.telegram.org/bot${TG_TOKEN}/answerCallbackQuery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callback_query_id: cbq.id, text: STATUS_AR[newStatus] || 'تم التحديث', show_alert: false }),
+      }).catch(() => {})
+    }
+    return
+  }
+
+  if (update.message?.text) {
+    const msg    = update.message
+    const chatId = msg.chat.id
+    const parts  = msg.text.trim().split(/\s+/)
+    const cmd    = parts[0].toLowerCase()
+    const arg    = parts.slice(1).join(' ').trim()
+
+    const reply = (text) => fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' }),
+    }).catch(() => {})
+
+    if (cmd === '/orders' || cmd === '/طلبات') {
+      const orders = await getOrders({ limit: 20, status: arg || undefined })
+      if (!orders.length) return reply('لا توجد طلبات.')
+      const statusAr = { pending: '⏳', preparing: '👨‍🍳', on_the_way: '🛵', delivered: '✅', cancelled: '🚫' }
+      const lines = orders.map(o =>
+        `*#${o.order_number}* — ${o.customer_name}\n📞 ${o.phone} | ${o.total} ج.م | ${statusAr[o.status] || o.status}\n${o.items.map(i => `${i.name} ×${i.quantity}`).join('، ')}`
+      ).join('\n\n')
+      return reply(`📋 *آخر الطلبات*\n\n${lines}`)
+    }
+
+    if (cmd === '/summary' || cmd === '/ملخص') {
+      const orders = await getOrders({ limit: 500 })
+      const total  = orders.reduce((s, o) => s + Number(o.total), 0)
+      const byStatus = {}
+      orders.forEach(o => { byStatus[o.status] = (byStatus[o.status] || 0) + 1 })
+      const statusAr = { pending: '⏳ انتظار', preparing: '👨‍🍳 تحضير', on_the_way: '🛵 في الطريق', delivered: '✅ تم', cancelled: '🚫 ملغي' }
+      const lines = Object.entries(byStatus).map(([s, c]) => `${statusAr[s] || s}: *${c}*`).join('\n')
+      return reply(`📊 *ملخص الطلبات*\n\n${lines}\n\n💰 *الإجمالي: ${total.toLocaleString()} ج.م*\n📦 *العدد: ${orders.length}*`)
+    }
+
+    if ((cmd === '/customer' || cmd === '/عميل') && arg) {
+      const customer = await getCustomerByPhone(arg)
+      if (!customer) return reply('❌ العميل مش موجود.')
+      const totalSpent = customer.orders.reduce((s, o) => s + Number(o.total), 0)
+      const statusAr = { pending: '⏳', preparing: '👨‍🍳', on_the_way: '🛵', delivered: '✅', cancelled: '🚫' }
+      const orderLines = customer.orders.slice(0, 5).map(o =>
+        `${statusAr[o.status] || ''} *#${o.order_number}* — ${o.total} ج.م\n${o.items.map(i => `${i.name} ×${i.quantity}`).join('، ')}`
+      ).join('\n\n')
+      return reply(`👤 *${customer.name}*\n📞 ${customer.phone}${customer.address ? '\n📍 ' + customer.address : ''}\n\n📦 عدد الطلبات: *${customer.orders.length}*\n💰 إجمالي الإنفاق: *${totalSpent} ج.م*${customer.orders.length ? '\n\n*آخر الطلبات:*\n\n' + orderLines : ''}`)
+    }
+
+    return reply('🤖 *Crepe Corner Bot*\n\nالأوامر:\n`/orders` — آخر 20 طلب\n`/orders pending` — فلتر بالحالة\n`/summary` — ملخص وإجماليات\n`/customer 01012345678` — بيانات عميل')
+  }
+})
+
 // ─── Customers ───────────────────────────────────────────
 app.get('/api/customers', async (req, res) => {
   const { limit, offset } = req.query
   res.json(await getCustomers({ limit: Number(limit) || 50, offset: Number(offset) || 0 }))
+})
+
+app.get('/api/customers/by-phone/:phone', async (req, res) => {
+  const customer = await getCustomerByPhone(req.params.phone)
+  if (!customer) return res.status(404).json({ error: 'العميل مش موجود' })
+  res.json(customer)
 })
 
 app.get('/api/customers/:id', async (req, res) => {
@@ -107,7 +222,7 @@ app.get('/admin', (_, res) => {
   .summary-item { text-align: center }
   .summary-item .val { font-size: 22px; font-weight: 900 }
   .summary-item .lbl { font-size: 11px; opacity: .8; margin-top: 2px }
-  .btn-reset { background: #f4b528; color: #1a0e08; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer }
+  .btn-reset { background: #f4b528; color: #1a0e08; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; align-self: flex-end }
   .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; justify-content:center; align-items:flex-start; padding-top: 40px }
   .modal-backdrop.open { display:flex }
   .modal { background:#fff; border-radius:16px; width:min(95vw,580px); max-height:80vh; overflow-y:auto; padding:24px }

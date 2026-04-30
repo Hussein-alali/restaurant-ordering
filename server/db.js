@@ -95,6 +95,12 @@ export async function getCustomers({ limit = 50, offset = 0 } = {}) {
   return rows
 }
 
+export async function getCustomerByPhone(phone) {
+  const { rows } = await pool.query('SELECT * FROM customers WHERE phone = $1', [phone])
+  if (!rows[0]) return null
+  return getCustomerWithOrders(rows[0].id)
+}
+
 export async function getCustomerWithOrders(id) {
   const { rows: customerRows } = await pool.query('SELECT * FROM customers WHERE id = $1', [id])
   if (!customerRows[0]) return null
