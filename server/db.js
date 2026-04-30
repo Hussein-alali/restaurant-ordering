@@ -37,6 +37,19 @@ await pool.query(`
     status         TEXT    NOT NULL DEFAULT 'pending',
     created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS products (
+    id               SERIAL PRIMARY KEY,
+    name             TEXT    NOT NULL,
+    description      TEXT,
+    image_url        TEXT,
+    delivery_time    TEXT,
+    original_price   INTEGER NOT NULL,
+    discounted_price INTEGER,
+    available        BOOLEAN NOT NULL DEFAULT true,
+    type             TEXT,
+    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
 `)
 
 export async function upsertCustomer({ name, phone, address }) {
@@ -109,6 +122,35 @@ export async function getCustomerWithOrders(id) {
     [id],
   )
   return { ...customerRows[0], orders: orderRows.map(r => ({ ...r, items: JSON.parse(r.items) })) }
+}
+
+export async function getProducts() {
+  const { rows } = await pool.query('SELECT * FROM products ORDER BY created_at DESC')
+  return rows
+}
+
+export async function createProduct(data) {
+  const { rows } = await pool.query(
+    `INSERT INTO products (name, description, image_url, delivery_time, original_price, discounted_price, available, type)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    [data.name, data.description || null, data.image_url || null, data.delivery_time || null,
+     data.original_price, data.discounted_price || null, data.available !== false, data.type || null],
+  )
+  return rows[0]
+}
+
+export async function updateProduct(id, data) {
+  const { rows } = await pool.query(
+    `UPDATE products SET name=$1, description=$2, image_url=$3, delivery_time=$4,
+     original_price=$5, discounted_price=$6, available=$7, type=$8 WHERE id=$9 RETURNING *`,
+    [data.name, data.description || null, data.image_url || null, data.delivery_time || null,
+     data.original_price, data.discounted_price || null, data.available !== false, data.type || null, id],
+  )
+  return rows[0]
+}
+
+export async function deleteProduct(id) {
+  await pool.query('DELETE FROM products WHERE id = $1', [id])
 }
 
 export default pool

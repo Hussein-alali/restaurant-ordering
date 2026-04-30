@@ -107,12 +107,17 @@ function MenuRow({ item, onAdd, onOpen }) {
   )
 }
 
-const STATUS_LABEL = { pending: '⏳ قيد الانتظار', preparing: '👨‍🍳 جاري التحضير', on_the_way: '🛵 في الطريق', delivered: '✅ وصل الطلب', cancelled: '🚫 ملغي' }
-const STATUS_COLOR = { pending: '#7a0d05', preparing: '#1d4ed8', on_the_way: '#166534', delivered: '#1f7a3f', cancelled: '#991b1b' }
-const STATUS_BG    = { pending: '#fde6a8', preparing: '#dbeafe', on_the_way: '#dcfce7', delivered: '#e6f4ec', cancelled: '#fee2e2' }
+const STEPS = [
+  { key: 'pending',    label: 'استُلم الطلب',  desc: 'المطبخ شايف طلبك',       icon: '📋' },
+  { key: 'preparing',  label: 'جاري التحضير',  desc: 'بيتجهز دلوقتي',          icon: '👨‍🍳' },
+  { key: 'on_the_way', label: 'في الطريق',      desc: 'المندوب اتحرك ناحيتك',   icon: '🛵' },
+  { key: 'delivered',  label: 'وصل الطلب',     desc: 'بالهنا والشفا 🎉',        icon: '✅' },
+]
+const STEP_IDX = { pending: 0, preparing: 1, on_the_way: 2, delivered: 3 }
 
 function LastOrderBanner({ orderId, orderNumber, navigate }) {
-  const [status, setStatus] = useState(null)
+  const [status, setStatus] = useState('pending')
+  const [cancelled, setCancelled] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -121,8 +126,9 @@ function LastOrderBanner({ orderId, orderNumber, navigate }) {
         const r = await fetch(`/api/orders/${orderId}`)
         if (!r.ok || !alive) return
         const d = await r.json()
+        if (d.status === 'cancelled') { setCancelled(true); clearInterval(id); return }
         setStatus(d.status)
-        if (d.status === 'delivered' || d.status === 'cancelled') clearInterval(id)
+        if (d.status === 'delivered') clearInterval(id)
       } catch {}
     }
     poll()
@@ -130,18 +136,49 @@ function LastOrderBanner({ orderId, orderNumber, navigate }) {
     return () => { alive = false; clearInterval(id) }
   }, [orderId])
 
-  if (!status || status === 'delivered' || status === 'cancelled') return null
+  if (cancelled) return null
+
+  const cur = STEP_IDX[status] ?? 0
 
   return (
-    <div
-      onClick={() => navigate('/confirmation')}
-      style={{ margin: '12px 16px 0', background: STATUS_BG[status], border: `1px solid ${STATUS_COLOR[status]}40`, borderRadius: 12, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-    >
-      <div>
-        <div style={{ fontSize: 12, fontWeight: 800, color: STATUS_COLOR[status] }}>{STATUS_LABEL[status]}</div>
-        <div style={{ fontSize: 11, color: '#5b4636', marginTop: 2 }}>طلب #{orderNumber} · اضغط لمتابعة الطلب</div>
+    <div style={{ margin: '14px 16px 0', background: '#fff', border: '1px solid #ead8bf', borderRadius: 16, padding: '14px 16px', cursor: 'pointer' }} onClick={() => navigate('/confirmation')}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ fontSize: 11, color: C.red, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ width: 7, height: 7, borderRadius: 4, background: C.red, display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
+          مباشر
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: C.ink }}>تتبع الطلب</div>
       </div>
-      <div style={{ fontSize: 18, color: STATUS_COLOR[status] }}>›</div>
+
+      {STEPS.map((step, i) => {
+        const done   = i < cur
+        const active = i === cur
+        const future = i > cur
+        return (
+          <div key={step.key} style={{ display: 'grid', gridTemplateColumns: '1fr 32px', gap: 10, paddingBottom: i < STEPS.length - 1 ? 16 : 0 }}>
+            <div style={{ paddingTop: 4, textAlign: 'right' }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: future ? C.muted : C.ink }}>{step.label}</div>
+              <div style={{ fontSize: 11, color: future ? C.rule : C.muted, marginTop: 1 }}>{step.desc}</div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 14, flexShrink: 0,
+                background: done ? '#1f7a3f' : active ? C.red : 'transparent',
+                border: `2px solid ${done ? '#1f7a3f' : active ? C.red : C.rule}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, color: '#fff', fontWeight: 900,
+                boxShadow: active ? `0 0 0 5px ${C.red}22` : 'none',
+                transition: 'all .4s',
+              }}>
+                {done ? '✓' : active ? step.icon : ''}
+              </div>
+              {i < STEPS.length - 1 && (
+                <div style={{ flex: 1, width: 2, minHeight: 14, marginTop: 3, background: done ? '#1f7a3f' : C.rule, transition: 'background .4s' }} />
+              )}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
