@@ -3,9 +3,14 @@ import { createContext, useContext, useReducer, useEffect } from 'react'
 const CartContext = createContext(null)
 
 const STORAGE_KEY = 'cc_customer'
+const LAST_ORDER_KEY = 'cc_last_order'
 
 function loadCustomer() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') } catch { return {} }
+}
+
+function loadLastOrder() {
+  try { return JSON.parse(localStorage.getItem(LAST_ORDER_KEY) || 'null') } catch { return null }
 }
 
 function buildInitialState() {
@@ -21,7 +26,7 @@ function buildInitialState() {
       building: saved.building || '',
       deliveryNotes: saved.deliveryNotes || '',
     },
-    lastOrder: null,
+    lastOrder: loadLastOrder(),
   }
 }
 
@@ -106,6 +111,13 @@ export function CartProvider({ children }) {
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.customer)) } catch {}
   }, [state.customer])
+
+  useEffect(() => {
+    try {
+      if (state.lastOrder) localStorage.setItem(LAST_ORDER_KEY, JSON.stringify(state.lastOrder))
+      else localStorage.removeItem(LAST_ORDER_KEY)
+    } catch {}
+  }, [state.lastOrder])
 
   return (
     <CartContext.Provider value={{ state, dispatch }}>

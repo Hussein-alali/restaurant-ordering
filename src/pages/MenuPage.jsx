@@ -115,9 +115,9 @@ const STEPS = [
 ]
 const STEP_IDX = { pending: 0, preparing: 1, on_the_way: 2, delivered: 3 }
 
-function LastOrderBanner({ orderId, orderNumber, navigate }) {
+function LastOrderBanner({ orderId, orderNumber, navigate, onDismiss }) {
   const [status, setStatus] = useState('pending')
-  const [cancelled, setCancelled] = useState(false)
+  const [gone, setGone] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -126,9 +126,9 @@ function LastOrderBanner({ orderId, orderNumber, navigate }) {
         const r = await fetch(`/api/orders/${orderId}`)
         if (!r.ok || !alive) return
         const d = await r.json()
-        if (d.status === 'cancelled') { setCancelled(true); clearInterval(id); return }
+        if (d.status === 'cancelled') { setGone(true); clearInterval(id); onDismiss?.(); return }
         setStatus(d.status)
-        if (d.status === 'delivered') clearInterval(id)
+        if (d.status === 'delivered') { clearInterval(id) }
       } catch {}
     }
     poll()
@@ -136,18 +136,26 @@ function LastOrderBanner({ orderId, orderNumber, navigate }) {
     return () => { alive = false; clearInterval(id) }
   }, [orderId])
 
-  if (cancelled) return null
+  if (gone) return null
 
   const cur = STEP_IDX[status] ?? 0
 
   return (
     <div style={{ margin: '14px 16px 0', background: '#fff', border: '1px solid #ead8bf', borderRadius: 16, padding: '14px 16px', cursor: 'pointer' }} onClick={() => navigate('/confirmation')}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <div style={{ fontSize: 11, color: C.red, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 7, height: 7, borderRadius: 4, background: C.red, display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
-          مباشر
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontSize: 11, color: C.red, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ width: 7, height: 7, borderRadius: 4, background: C.red, display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
+            مباشر
+          </div>
+          {status === 'delivered' && (
+            <button
+              onClick={e => { e.stopPropagation(); onDismiss?.() }}
+              style={{ fontSize: 10, color: C.muted, background: 'none', border: '1px solid #ead8bf', borderRadius: 6, padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit' }}
+            >إخفاء</button>
+          )}
         </div>
-        <div style={{ fontSize: 13, fontWeight: 800, color: C.ink }}>تتبع الطلب</div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: C.ink }}>تتبع الطلب · #{orderNumber}</div>
       </div>
 
       {STEPS.map((step, i) => {
@@ -319,7 +327,14 @@ function MenuPage() {
       </div>
 
       {/* Last order status banner */}
-      {state.lastOrder?.id && <LastOrderBanner orderId={state.lastOrder.id} orderNumber={state.lastOrder.orderNumber} navigate={navigate} />}
+      {state.lastOrder?.id && (
+        <LastOrderBanner
+          orderId={state.lastOrder.id}
+          orderNumber={state.lastOrder.orderNumber}
+          navigate={navigate}
+          onDismiss={() => dispatch({ type: 'SET_LAST_ORDER', payload: null })}
+        />
+      )}
 
       {/* Section header */}
       <div style={{ padding: '14px 18px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
