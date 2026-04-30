@@ -6,12 +6,12 @@ await pool.query("ALTER SEQUENCE orders_id_seq RESTART WITH 1")
 await pool.query("ALTER SEQUENCE customers_id_seq RESTART WITH 1")
 
 const customers = [
-  { name: 'أحمد محمد',     phone: '07801234567', address: 'الكرادة، بغداد' },
-  { name: 'سارة علي',      phone: '07709876543', address: 'المنصور، بغداد' },
-  { name: 'محمد حسن',      phone: '07811112222', address: null },
-  { name: 'نور كمال',      phone: '07723334444', address: 'الجادرية، بغداد' },
-  { name: 'علي عبدالله',   phone: '07835556666', address: 'الزعفرانية، بغداد' },
-  { name: 'فاطمة إبراهيم', phone: '07707778888', address: 'الدورة، بغداد' },
+  { name: 'أحمد محمد',     phone: '01012345678', address: 'المعادي، القاهرة' },
+  { name: 'سارة علي',      phone: '01198765432', address: 'الزمالك، القاهرة' },
+  { name: 'محمد حسن',      phone: '01234567890', address: null },
+  { name: 'نور كمال',      phone: '01556781234', address: 'المهندسين، الجيزة' },
+  { name: 'علي عبدالله',   phone: '01067893456', address: 'مدينة نصر، القاهرة' },
+  { name: 'فاطمة إبراهيم', phone: '01122334455', address: 'الإسكندرية' },
 ]
 
 for (const c of customers) {
@@ -23,40 +23,40 @@ for (const c of customers) {
 
 const orders = [
   {
-    orderNumber: 'A1B2C3', customerId: 1, customerName: 'أحمد محمد', phone: '07801234567',
-    address: 'الكرادة، بغداد', serviceType: 'توصيل', paymentMethod: 'كاش',
-    items: [{ name: 'كريب نوتيلا', quantity: 2, price: 3500 }, { name: 'عصير برتقال', quantity: 1, price: 2000 }],
-    subtotal: 9000, deliveryFee: 15, total: 9015, deliveryNotes: 'الطابق الثاني', status: 'pending',
+    orderNumber: 'A1B2C3', customerId: 1, customerName: 'أحمد محمد', phone: '01012345678',
+    address: 'المعادي، القاهرة', serviceType: 'توصيل', paymentMethod: 'كاش',
+    items: [{ name: 'كريب نوتيلا', quantity: 2, price: 35 }, { name: 'عصير برتقال', quantity: 1, price: 20 }],
+    subtotal: 90, deliveryFee: 15, total: 105, deliveryNotes: 'الطابق الثاني', status: 'pending',
   },
   {
-    orderNumber: 'D4E5F6', customerId: 2, customerName: 'سارة علي', phone: '07709876543',
-    address: 'المنصور، بغداد', serviceType: 'توصيل', paymentMethod: 'بطاقة',
-    items: [{ name: 'كريب فراولة وكريمة', quantity: 1, price: 4000 }, { name: 'كريب لوتس', quantity: 1, price: 4500 }],
-    subtotal: 8500, deliveryFee: 15, total: 8515, deliveryNotes: null, status: 'preparing',
+    orderNumber: 'D4E5F6', customerId: 2, customerName: 'سارة علي', phone: '01198765432',
+    address: 'الزمالك، القاهرة', serviceType: 'توصيل', paymentMethod: 'بطاقة',
+    items: [{ name: 'كريب فراولة وكريمة', quantity: 1, price: 40 }, { name: 'كريب لوتس', quantity: 1, price: 45 }],
+    subtotal: 85, deliveryFee: 15, total: 100, deliveryNotes: null, status: 'preparing',
   },
   {
-    orderNumber: 'G7H8I9', customerId: 3, customerName: 'محمد حسن', phone: '07811112222',
+    orderNumber: 'G7H8I9', customerId: 3, customerName: 'محمد حسن', phone: '01234567890',
     address: null, serviceType: 'استلام', paymentMethod: 'كاش',
-    items: [{ name: 'كريب شوكولاتة', quantity: 3, price: 3500 }],
-    subtotal: 10500, deliveryFee: 0, total: 10500, deliveryNotes: null, status: 'on_the_way',
+    items: [{ name: 'كريب شوكولاتة', quantity: 3, price: 35 }],
+    subtotal: 105, deliveryFee: 0, total: 105, deliveryNotes: null, status: 'on_the_way',
   },
   {
-    orderNumber: 'J1K2L3', customerId: 4, customerName: 'نور كمال', phone: '07723334444',
-    address: 'الجادرية، بغداد', serviceType: 'توصيل', paymentMethod: 'كاش',
-    items: [{ name: 'كريب موز وعسل', quantity: 2, price: 3800 }, { name: 'كريب نوتيلا', quantity: 1, price: 3500 }, { name: 'ماء معدني', quantity: 2, price: 500 }],
-    subtotal: 12100, deliveryFee: 15, total: 12115, deliveryNotes: 'بدون سكر', status: 'delivered',
+    orderNumber: 'J1K2L3', customerId: 4, customerName: 'نور كمال', phone: '01556781234',
+    address: 'المهندسين، الجيزة', serviceType: 'توصيل', paymentMethod: 'كاش',
+    items: [{ name: 'كريب موز وعسل', quantity: 2, price: 38 }, { name: 'كريب نوتيلا', quantity: 1, price: 35 }, { name: 'ماء معدني', quantity: 2, price: 10 }],
+    subtotal: 131, deliveryFee: 15, total: 146, deliveryNotes: 'بدون سكر', status: 'delivered',
   },
   {
-    orderNumber: 'M4N5O6', customerId: 5, customerName: 'علي عبدالله', phone: '07835556666',
-    address: 'الزعفرانية، بغداد', serviceType: 'توصيل', paymentMethod: 'بطاقة',
-    items: [{ name: 'كريب لوتس', quantity: 2, price: 4500 }],
-    subtotal: 9000, deliveryFee: 15, total: 9015, deliveryNotes: null, status: 'delivered',
+    orderNumber: 'M4N5O6', customerId: 5, customerName: 'علي عبدالله', phone: '01067893456',
+    address: 'مدينة نصر، القاهرة', serviceType: 'توصيل', paymentMethod: 'بطاقة',
+    items: [{ name: 'كريب لوتس', quantity: 2, price: 45 }],
+    subtotal: 90, deliveryFee: 15, total: 105, deliveryNotes: null, status: 'delivered',
   },
   {
-    orderNumber: 'P7Q8R9', customerId: 6, customerName: 'فاطمة إبراهيم', phone: '07707778888',
-    address: 'الدورة، بغداد', serviceType: 'توصيل', paymentMethod: 'كاش',
-    items: [{ name: 'كريب فراولة وكريمة', quantity: 2, price: 4000 }, { name: 'عصير تفاح', quantity: 2, price: 2000 }],
-    subtotal: 12000, deliveryFee: 15, total: 12015, deliveryNotes: 'يرجى الإسراع', status: 'cancelled',
+    orderNumber: 'P7Q8R9', customerId: 6, customerName: 'فاطمة إبراهيم', phone: '01122334455',
+    address: 'الإسكندرية', serviceType: 'توصيل', paymentMethod: 'كاش',
+    items: [{ name: 'كريب فراولة وكريمة', quantity: 2, price: 40 }, { name: 'عصير تفاح', quantity: 2, price: 20 }],
+    subtotal: 120, deliveryFee: 15, total: 135, deliveryNotes: 'يرجى الإسراع', status: 'cancelled',
   },
 ]
 

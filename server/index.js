@@ -69,7 +69,7 @@ app.get('/api/customers/:id', async (req, res) => {
   res.json(customer)
 })
 
-// ─── Admin UI (simple) ───────────────────────────────────
+// ─── Admin UI ────────────────────────────────────────────
 app.get('/admin', (_, res) => {
   res.send(`<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -87,17 +87,35 @@ app.get('/admin', (_, res) => {
   nav button.active { color: #f4b528; border-bottom: 2px solid #f4b528 }
   main { padding: 20px 24px }
   .card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #ead8bf }
+  .card-clickable { cursor: pointer; transition: box-shadow .15s }
+  .card-clickable:hover { box-shadow: 0 2px 12px rgba(168,22,12,.12) }
   .badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700 }
-  .badge.pending { background: #fde6a8; color: #7a0d05 }
-  .badge.preparing { background: #dbeafe; color: #1d4ed8 }
+  .badge.pending    { background: #fde6a8; color: #7a0d05 }
+  .badge.preparing  { background: #dbeafe; color: #1d4ed8 }
   .badge.on_the_way { background: #dcfce7; color: #166534 }
-  .badge.delivered { background: #e6f4ec; color: #1f7a3f }
-  .badge.cancelled { background: #fee2e2; color: #991b1b }
-  select { padding: 4px 8px; border-radius: 6px; border: 1px solid #ead8bf; font-size: 12px; cursor: pointer }
+  .badge.delivered  { background: #e6f4ec; color: #1f7a3f }
+  .badge.cancelled  { background: #fee2e2; color: #991b1b }
+  select,input[type=date] { padding: 6px 10px; border-radius: 8px; border: 1px solid #ead8bf; font-size: 13px; cursor: pointer; background: #fff; font-family: inherit }
   .meta { font-size: 12px; color: #9a8674; margin-top: 4px }
-  .total { font-size: 18px; font-weight: 800; color: #a8160c }
+  .price { font-size: 18px; font-weight: 800; color: #a8160c }
   h2 { font-size: 15px; font-weight: 800; margin-bottom: 12px; color: #5b4636 }
   #loading { text-align: center; padding: 40px; color: #9a8674 }
+  .filters { background: #fff; border: 1px solid #ead8bf; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center }
+  .filters label { font-size: 12px; color: #5b4636; font-weight: 600 }
+  .filters-group { display: flex; flex-direction: column; gap: 4px }
+  .summary { background: #a8160c; color: #fff; border-radius: 12px; padding: 14px 20px; margin-bottom: 14px; display: flex; gap: 28px; align-items: center }
+  .summary-item { text-align: center }
+  .summary-item .val { font-size: 22px; font-weight: 900 }
+  .summary-item .lbl { font-size: 11px; opacity: .8; margin-top: 2px }
+  .btn-reset { background: #f4b528; color: #1a0e08; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer }
+  .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; justify-content:center; align-items:flex-start; padding-top: 40px }
+  .modal-backdrop.open { display:flex }
+  .modal { background:#fff; border-radius:16px; width:min(95vw,580px); max-height:80vh; overflow-y:auto; padding:24px }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px }
+  .modal-header h3 { font-size:16px; font-weight:800; color:#a8160c }
+  .close-btn { background:none; border:none; font-size:20px; cursor:pointer; color:#9a8674 }
+  .order-mini { border:1px solid #ead8bf; border-radius:10px; padding:12px; margin-bottom:10px }
+  .divider { height:1px; background:#ead8bf; margin: 6px 0 }
 </style>
 </head>
 <body>
@@ -111,9 +129,21 @@ app.get('/admin', (_, res) => {
 </nav>
 <main id="main"><div id="loading">جاري التحميل…</div></main>
 
+<!-- Customer modal -->
+<div class="modal-backdrop" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">بيانات العميل</h3>
+      <button class="close-btn" onclick="document.getElementById('modal').classList.remove('open')">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
 <script>
 const STATUS_AR = { pending: 'قيد الانتظار', preparing: 'جاري التحضير', on_the_way: 'في الطريق', delivered: 'تم التوصيل', cancelled: 'ملغي' }
 const STATUS_VALS = Object.keys(STATUS_AR)
+let allOrders = []
 
 async function show(tab) {
   document.querySelectorAll('nav button').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='orders')||(i===1&&tab==='customers')))
@@ -122,22 +152,80 @@ async function show(tab) {
   else await loadCustomers()
 }
 
+// ─── Orders ──────────────────────────────────────────────
 async function loadOrders() {
-  const data = await fetch('/api/orders').then(r => r.json())
-  if (!data.length) { document.getElementById('main').innerHTML = '<div id="loading">لا توجد طلبات بعد</div>'; return }
-  document.getElementById('main').innerHTML = '<h2>آخر الطلبات (' + data.length + ')</h2>' +
-    data.map(o => \`
+  allOrders = await fetch('/api/orders?limit=500').then(r => r.json())
+  renderFilters()
+  applyFilters()
+}
+
+function renderFilters() {
+  const f = document.createElement('div')
+  f.id = 'filters-bar'
+  f.className = 'filters'
+  f.innerHTML = \`
+    <div class="filters-group">
+      <label>من تاريخ</label>
+      <input type="date" id="f-from" onchange="applyFilters()">
+    </div>
+    <div class="filters-group">
+      <label>إلى تاريخ</label>
+      <input type="date" id="f-to" onchange="applyFilters()">
+    </div>
+    <div class="filters-group">
+      <label>الحالة</label>
+      <select id="f-status" onchange="applyFilters()">
+        <option value="">الكل</option>
+        \${STATUS_VALS.map(s=>\`<option value="\${s}">\${STATUS_AR[s]}</option>\`).join('')}
+      </select>
+    </div>
+    <button class="btn-reset" onclick="resetFilters()">مسح الفلاتر</button>
+  \`
+  document.getElementById('main').innerHTML = ''
+  document.getElementById('main').appendChild(f)
+  document.getElementById('main').insertAdjacentHTML('beforeend', '<div id="summary-bar"></div><div id="orders-list"></div>')
+}
+
+function applyFilters() {
+  const from   = document.getElementById('f-from')?.value
+  const to     = document.getElementById('f-to')?.value
+  const status = document.getElementById('f-status')?.value
+
+  let filtered = allOrders.filter(o => {
+    const d = new Date(o.created_at)
+    if (from && d < new Date(from)) return false
+    if (to   && d > new Date(to + 'T23:59:59')) return false
+    if (status && o.status !== status) return false
+    return true
+  })
+
+  const totalPrice = filtered.reduce((s, o) => s + Number(o.total), 0)
+
+  document.getElementById('summary-bar').innerHTML = \`
+    <div class="summary">
+      <div class="summary-item"><div class="val">\${filtered.length}</div><div class="lbl">طلب</div></div>
+      <div style="width:1px;background:rgba(255,255,255,.3);height:36px"></div>
+      <div class="summary-item"><div class="val">\${totalPrice.toLocaleString('ar-EG')} ج.م</div><div class="lbl">إجمالي المبيعات</div></div>
+    </div>
+  \`
+
+  if (!filtered.length) {
+    document.getElementById('orders-list').innerHTML = '<div id="loading">لا توجد طلبات بهذه الفلاتر</div>'
+    return
+  }
+
+  document.getElementById('orders-list').innerHTML = filtered.map(o => \`
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
         <div>
           <div style="font-weight:800;font-size:15px">#\${o.order_number} · \${o.customer_name}</div>
           <div class="meta">\${o.phone} · \${o.service_type} · \${o.payment_method}</div>
           \${o.address ? '<div class="meta">📍 ' + o.address + '</div>' : ''}
-          <div class="meta" style="margin-top:6px">\${JSON.parse(typeof o.items==='string'?o.items:JSON.stringify(o.items)).map(i=>i.name+' ×'+i.quantity).join(' · ')}</div>
+          <div class="meta" style="margin-top:6px">\${(Array.isArray(o.items)?o.items:JSON.parse(o.items)).map(i=>i.name+' ×'+i.quantity).join(' · ')}</div>
           \${o.delivery_notes ? '<div class="meta" style="color:#5b4636;font-style:italic">📝 ' + o.delivery_notes + '</div>' : ''}
         </div>
         <div style="text-align:left;flex-shrink:0">
-          <div class="total">\${o.total} ج.م</div>
+          <div class="price">\${o.total} ج.م</div>
           <div class="meta">\${new Date(o.created_at).toLocaleString('ar-EG')}</div>
         </div>
       </div>
@@ -147,24 +235,78 @@ async function loadOrders() {
           \${STATUS_VALS.map(s=>'<option value="'+s+'"'+(s===o.status?' selected':'')+'>'+STATUS_AR[s]+'</option>').join('')}
         </select>
       </div>
-    </div>\`).join('')
+    </div>
+  \`).join('')
 }
 
+function resetFilters() {
+  document.getElementById('f-from').value = ''
+  document.getElementById('f-to').value = ''
+  document.getElementById('f-status').value = ''
+  applyFilters()
+}
+
+// ─── Customers ───────────────────────────────────────────
 async function loadCustomers() {
-  const data = await fetch('/api/customers').then(r => r.json())
+  const data = await fetch('/api/customers?limit=500').then(r => r.json())
   if (!data.length) { document.getElementById('main').innerHTML = '<div id="loading">لا يوجد عملاء بعد</div>'; return }
-  document.getElementById('main').innerHTML = '<h2>العملاء (' + data.length + ')</h2>' +
+  document.getElementById('main').innerHTML =
+    '<h2 style="margin-bottom:12px">العملاء (' + data.length + ')</h2>' +
     data.map(c => \`
-    <div class="card">
-      <div style="font-weight:800;font-size:15px">\${c.name}</div>
-      <div class="meta">\${c.phone}</div>
-      \${c.address ? '<div class="meta">📍 ' + c.address + '</div>' : ''}
-      <div class="meta">انضم: \${new Date(c.created_at).toLocaleString('ar-EG')}</div>
-    </div>\`).join('')
+      <div class="card card-clickable" onclick="openCustomer(\${c.id})">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:800;font-size:15px">\${c.name}</div>
+            <div class="meta">\${c.phone}</div>
+            \${c.address ? '<div class="meta">📍 ' + c.address + '</div>' : ''}
+          </div>
+          <div style="color:#a8160c;font-size:20px">›</div>
+        </div>
+      </div>
+    \`).join('')
+}
+
+async function openCustomer(id) {
+  document.getElementById('modal-body').innerHTML = '<div style="text-align:center;padding:30px;color:#9a8674">جاري التحميل…</div>'
+  document.getElementById('modal').classList.add('open')
+
+  const data = await fetch('/api/customers/' + id).then(r => r.json())
+  document.getElementById('modal-title').textContent = data.name + ' — ' + data.phone
+
+  const totalSpent = data.orders.reduce((s, o) => s + Number(o.total), 0)
+
+  document.getElementById('modal-body').innerHTML = \`
+    \${data.address ? '<div class="meta" style="margin-bottom:10px">📍 ' + data.address + '</div>' : ''}
+    <div style="display:flex;gap:20px;margin-bottom:16px">
+      <div><div style="font-size:20px;font-weight:900;color:#a8160c">\${data.orders.length}</div><div class="meta">طلب</div></div>
+      <div><div style="font-size:20px;font-weight:900;color:#a8160c">\${totalSpent.toLocaleString('ar-EG')} ج.م</div><div class="meta">إجمالي الإنفاق</div></div>
+    </div>
+    <div class="divider"></div>
+    <div style="margin-top:12px">
+      \${data.orders.length === 0 ? '<div class="meta">لا توجد طلبات</div>' :
+        data.orders.map(o => \`
+          <div class="order-mini">
+            <div style="display:flex;justify-content:space-between">
+              <div style="font-weight:700">#\${o.order_number}</div>
+              <div style="font-weight:800;color:#a8160c">\${o.total} ج.م</div>
+            </div>
+            <div class="meta">\${new Date(o.created_at).toLocaleString('ar-EG')}</div>
+            <div class="meta" style="margin-top:4px">\${(Array.isArray(o.items)?o.items:JSON.parse(o.items)).map(i=>i.name+' ×'+i.quantity).join(' · ')}</div>
+            <div style="margin-top:6px"><span class="badge \${o.status}">\${STATUS_AR[o.status]||o.status}</span></div>
+          </div>
+        \`).join('')
+      }
+    </div>
+  \`
+}
+
+function closeModal(e) {
+  if (e.target.id === 'modal') document.getElementById('modal').classList.remove('open')
 }
 
 async function updateStatus(id, status) {
   await fetch('/api/orders/'+id+'/status', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status}) })
+  applyFilters()
 }
 
 show('orders')
