@@ -273,45 +273,51 @@ const STATUS_AR = { pending: 'قيد الانتظار', preparing: 'جاري ا�
 const STATUS_VALS = Object.keys(STATUS_AR)
 let allOrders = []
 
+let currentTab = 'orders'
+
 async function show(tab) {
-  document.querySelectorAll('nav button').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='orders')||(i===1&&tab==='customers')))
+  currentTab = tab
+  document.querySelectorAll('nav button:not(.btn-excel)').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='orders')||(i===1&&tab==='customers')))
   document.getElementById('main').innerHTML = '<div id="loading">جاري التحميل…</div>'
-  if (tab === 'orders') await loadOrders()
+  if (tab === 'orders') await loadOrders(true)
   else await loadCustomers()
 }
 
 // ─── Orders ──────────────────────────────────────────────
-async function loadOrders() {
-  allOrders = await fetch('/api/orders?limit=500').then(r => r.json())
-  renderFilters()
-  applyFilters()
+async function loadOrders(init = false) {
+  try {
+    const data = await fetch('/api/orders?limit=500').then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
+    allOrders = data
+    if (init) renderFilters()
+    applyFilters()
+  } catch(e) {
+    document.getElementById('main').innerHTML = \`<div id="loading" style="color:#a8160c">خطأ في تحميل البيانات: \${e.message}</div>\`
+  }
 }
 
 function renderFilters() {
-  const f = document.createElement('div')
-  f.id = 'filters-bar'
-  f.className = 'filters'
-  f.innerHTML = \`
-    <div class="filters-group">
-      <label>من تاريخ</label>
-      <input type="date" id="f-from" onchange="applyFilters()">
+  document.getElementById('main').innerHTML = \`
+    <div class="filters" id="filters-bar">
+      <div class="filters-group">
+        <label>من تاريخ</label>
+        <input type="date" id="f-from" onchange="applyFilters()">
+      </div>
+      <div class="filters-group">
+        <label>إلى تاريخ</label>
+        <input type="date" id="f-to" onchange="applyFilters()">
+      </div>
+      <div class="filters-group">
+        <label>الحالة</label>
+        <select id="f-status" onchange="applyFilters()">
+          <option value="">الكل</option>
+          \${STATUS_VALS.map(s=>\`<option value="\${s}">\${STATUS_AR[s]}</option>\`).join('')}
+        </select>
+      </div>
+      <button class="btn-reset" onclick="resetFilters()">مسح الفلاتر</button>
     </div>
-    <div class="filters-group">
-      <label>إلى تاريخ</label>
-      <input type="date" id="f-to" onchange="applyFilters()">
-    </div>
-    <div class="filters-group">
-      <label>الحالة</label>
-      <select id="f-status" onchange="applyFilters()">
-        <option value="">الكل</option>
-        \${STATUS_VALS.map(s=>\`<option value="\${s}">\${STATUS_AR[s]}</option>\`).join('')}
-      </select>
-    </div>
-    <button class="btn-reset" onclick="resetFilters()">مسح الفلاتر</button>
+    <div id="summary-bar"></div>
+    <div id="orders-list"></div>
   \`
-  document.getElementById('main').innerHTML = ''
-  document.getElementById('main').appendChild(f)
-  document.getElementById('main').insertAdjacentHTML('beforeend', '<div id="summary-bar"></div><div id="orders-list"></div>')
 }
 
 function applyFilters() {
@@ -376,7 +382,9 @@ function resetFilters() {
 
 // ─── Customers ───────────────────────────────────────────
 async function loadCustomers() {
-  const data = await fetch('/api/customers?limit=500').then(r => r.json())
+  let data
+  try { data = await fetch('/api/customers?limit=500').then(r => { if (!r.ok) throw new Error(r.status); return r.json() }) }
+  catch(e) { document.getElementById('main').innerHTML = \`<div id="loading" style="color:#a8160c">خطأ في تحميل البيانات: \${e.message}</div>\`; return }
   if (!data.length) { document.getElementById('main').innerHTML = '<div id="loading">لا يوجد عملاء بعد</div>'; return }
   document.getElementById('main').innerHTML =
     '<h2 style="margin-bottom:12px">العملاء (' + data.length + ')</h2>' +
@@ -438,7 +446,7 @@ async function updateStatus(id, status) {
 }
 
 show('orders')
-setInterval(() => { if (document.querySelector('nav button.active').textContent.includes('طلب')) loadOrders() }, 15000)
+setInterval(() => { if (currentTab === 'orders') loadOrders(false) }, 15000)
 
 async function exportExcel() {
   const [ordersRaw, customersRaw] = await Promise.all([

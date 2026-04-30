@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart, calculateTotal } from '../context/CartContext'
 import menuData, { CATS, ADDONS, ADDON_CATS } from '../data/menu'
@@ -103,6 +103,45 @@ function MenuRow({ item, onAdd, onOpen }) {
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+const STATUS_LABEL = { pending: '⏳ قيد الانتظار', preparing: '👨‍🍳 جاري التحضير', on_the_way: '🛵 في الطريق', delivered: '✅ وصل الطلب', cancelled: '🚫 ملغي' }
+const STATUS_COLOR = { pending: '#7a0d05', preparing: '#1d4ed8', on_the_way: '#166534', delivered: '#1f7a3f', cancelled: '#991b1b' }
+const STATUS_BG    = { pending: '#fde6a8', preparing: '#dbeafe', on_the_way: '#dcfce7', delivered: '#e6f4ec', cancelled: '#fee2e2' }
+
+function LastOrderBanner({ orderId, orderNumber, navigate }) {
+  const [status, setStatus] = useState(null)
+
+  useEffect(() => {
+    let alive = true
+    const poll = async () => {
+      try {
+        const r = await fetch(`/api/orders/${orderId}`)
+        if (!r.ok || !alive) return
+        const d = await r.json()
+        setStatus(d.status)
+        if (d.status === 'delivered' || d.status === 'cancelled') clearInterval(id)
+      } catch {}
+    }
+    poll()
+    const id = setInterval(poll, 10000)
+    return () => { alive = false; clearInterval(id) }
+  }, [orderId])
+
+  if (!status || status === 'delivered' || status === 'cancelled') return null
+
+  return (
+    <div
+      onClick={() => navigate('/confirmation')}
+      style={{ margin: '12px 16px 0', background: STATUS_BG[status], border: `1px solid ${STATUS_COLOR[status]}40`, borderRadius: 12, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+    >
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: STATUS_COLOR[status] }}>{STATUS_LABEL[status]}</div>
+        <div style={{ fontSize: 11, color: '#5b4636', marginTop: 2 }}>طلب #{orderNumber} · اضغط لمتابعة الطلب</div>
+      </div>
+      <div style={{ fontSize: 18, color: STATUS_COLOR[status] }}>›</div>
     </div>
   )
 }
@@ -230,6 +269,9 @@ function MenuPage() {
           ))}
         </div>
       </div>
+
+      {/* Last order status banner */}
+      {state.lastOrder?.id && <LastOrderBanner orderId={state.lastOrder.id} orderNumber={state.lastOrder.orderNumber} navigate={navigate} />}
 
       {/* Section header */}
       <div style={{ padding: '14px 18px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
