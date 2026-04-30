@@ -1,19 +1,28 @@
-import { createContext, useContext, useReducer } from 'react'
+import { createContext, useContext, useReducer, useEffect } from 'react'
 
 const CartContext = createContext(null)
 
-const initialState = {
-  items: [],
-  serviceType: 'توصيل',
-  paymentMethod: 'كاش',
-  customer: {
-    name: '',
-    phone: '',
-    address: '',
-    building: '',
-    deliveryNotes: '',
-  },
-  lastOrder: null,
+const STORAGE_KEY = 'cc_customer'
+
+function loadCustomer() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') } catch { return {} }
+}
+
+function buildInitialState() {
+  const saved = loadCustomer()
+  return {
+    items: [],
+    serviceType: 'توصيل',
+    paymentMethod: 'كاش',
+    customer: {
+      name: saved.name || '',
+      phone: saved.phone || '',
+      address: saved.address || '',
+      building: saved.building || '',
+      deliveryNotes: saved.deliveryNotes || '',
+    },
+    lastOrder: null,
+  }
 }
 
 function cartReducer(state, action) {
@@ -92,7 +101,11 @@ function cartReducer(state, action) {
 }
 
 export function CartProvider({ children }) {
-  const [state, dispatch] = useReducer(cartReducer, initialState)
+  const [state, dispatch] = useReducer(cartReducer, null, buildInitialState)
+
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.customer)) } catch {}
+  }, [state.customer])
 
   return (
     <CartContext.Provider value={{ state, dispatch }}>

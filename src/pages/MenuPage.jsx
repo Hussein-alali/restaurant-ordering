@@ -151,6 +151,10 @@ function MenuPage() {
             </div>
           </div>
           <WhatsAppButton phone="201044438830" />
+          <button
+            onClick={() => navigate('/my-orders')}
+            style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 10, padding: '6px 10px', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+          >طلباتي</button>
         </div>
 
         {/* Service toggle */}

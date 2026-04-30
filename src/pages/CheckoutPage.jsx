@@ -85,7 +85,8 @@ function CheckoutPage() {
         body: JSON.stringify(payload),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      dispatch({ type: 'SET_LAST_ORDER', payload })
+      const { id, orderNumber } = await res.json()
+      dispatch({ type: 'SET_LAST_ORDER', payload: { ...payload, id, orderNumber } })
       dispatch({ type: 'CLEAR_CART' })
       navigate('/confirmation')
     } catch {

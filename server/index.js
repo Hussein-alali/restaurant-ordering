@@ -202,6 +202,7 @@ app.get('/admin', (_, res) => {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Crepe Corner — Admin</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0 }
   body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5ece0; color: #1a0e08; direction: rtl }
@@ -233,6 +234,7 @@ app.get('/admin', (_, res) => {
   .summary-item .val { font-size: 22px; font-weight: 900 }
   .summary-item .lbl { font-size: 11px; opacity: .8; margin-top: 2px }
   .btn-reset { background: #f4b528; color: #1a0e08; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; align-self: flex-end }
+  .btn-excel { background: #1d6f42; color: #fff; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-right: auto }
   .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; justify-content:center; align-items:flex-start; padding-top: 40px }
   .modal-backdrop.open { display:flex }
   .modal { background:#fff; border-radius:16px; width:min(95vw,580px); max-height:80vh; overflow-y:auto; padding:24px }
@@ -251,6 +253,7 @@ app.get('/admin', (_, res) => {
 <nav>
   <button class="active" onclick="show('orders')">الطلبات</button>
   <button onclick="show('customers')">العملاء</button>
+  <button class="btn-excel" onclick="exportExcel()">📊 تصدير Excel</button>
 </nav>
 <main id="main"><div id="loading">جاري التحميل…</div></main>
 
@@ -436,6 +439,45 @@ async function updateStatus(id, status) {
 
 show('orders')
 setInterval(() => { if (document.querySelector('nav button.active').textContent.includes('طلب')) loadOrders() }, 15000)
+
+async function exportExcel() {
+  const [ordersRaw, customersRaw] = await Promise.all([
+    fetch('/api/orders?limit=5000').then(r => r.json()),
+    fetch('/api/customers?limit=5000').then(r => r.json()),
+  ])
+
+  const STATUS_AR = { pending: 'قيد الانتظار', preparing: 'جاري التحضير', on_the_way: 'في الطريق', delivered: 'تم التوصيل', cancelled: 'ملغي' }
+
+  const ordersSheet = ordersRaw.map(o => ({
+    'رقم الطلب':       o.order_number,
+    'اسم العميل':      o.customer_name,
+    'التليفون':        o.phone,
+    'العنوان':         o.address || '',
+    'نوع الخدمة':      o.service_type,
+    'طريقة الدفع':     o.payment_method,
+    'الأصناف':         (Array.isArray(o.items) ? o.items : JSON.parse(o.items)).map(i => \`\${i.name} ×\${i.quantity}\`).join(' | '),
+    'المجموع':         o.subtotal,
+    'رسوم التوصيل':    o.delivery_fee,
+    'الإجمالي':        o.total,
+    'ملاحظات':         o.delivery_notes || '',
+    'الحالة':          STATUS_AR[o.status] || o.status,
+    'التاريخ':         new Date(o.created_at).toLocaleString('ar-EG'),
+  }))
+
+  const customersSheet = customersRaw.map(c => ({
+    'الاسم':        c.name,
+    'التليفون':     c.phone,
+    'العنوان':      c.address || '',
+    'تاريخ التسجيل': new Date(c.created_at).toLocaleString('ar-EG'),
+  }))
+
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ordersSheet),    'الطلبات')
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(customersSheet), 'العملاء')
+
+  const date = new Date().toLocaleDateString('ar-EG').replace(/\//g, '-')
+  XLSX.writeFile(wb, \`crepe-corner-\${date}.xlsx\`)
+}
 </script>
 </body>
 </html>`)
