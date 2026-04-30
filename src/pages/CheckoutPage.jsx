@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart, calculateTotal, formatPayload, validateForm } from '../context/CartContext'
 
-const API_URL = import.meta.env.VITE_API_URL
-const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL || 'https://your-n8n-instance.com/webhook/restaurant-order'
 
 const C = {
   red:        '#a8160c',
@@ -81,21 +79,12 @@ function CheckoutPage() {
     setStatus('loading')
     const payload = formatPayload(state)
     try {
-      if (API_URL) {
-        const res = await fetch('/api/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      } else {
-        const res = await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      }
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       dispatch({ type: 'SET_LAST_ORDER', payload })
       dispatch({ type: 'CLEAR_CART' })
       navigate('/confirmation')
