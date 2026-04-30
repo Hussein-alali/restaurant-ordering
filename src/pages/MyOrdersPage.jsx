@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
+import menuData, { ADDONS } from '../data/menu'
+
+const ALL_MENU = [...menuData, ...ADDONS]
+const imageByName = (name) => ALL_MENU.find(m => m.name === name)?.image || null
 
 const C = {
   red: '#a8160c', bg: '#f5ece0', card: '#ffffff',
@@ -84,7 +88,7 @@ export default function MyOrdersPage() {
                     <button
                       onClick={() => {
                         dispatch({ type: 'CLEAR_CART' })
-                        items.forEach(i => dispatch({ type: 'ADD_ITEM', payload: i }))
+                        items.forEach(i => dispatch({ type: 'ADD_ITEM', payload: { ...i, image: i.image || imageByName(i.name) } }))
                         navigate('/cart')
                       }}
                       style={{ background: C.red, color: '#fff', border: 'none', borderRadius: 8, padding: '5px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}

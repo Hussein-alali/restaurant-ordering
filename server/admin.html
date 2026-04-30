@@ -23,11 +23,6 @@
   .badge.on_the_way { background: #dcfce7; color: #166534 }
   .badge.delivered  { background: #e6f4ec; color: #1f7a3f }
   .badge.cancelled  { background: #fee2e2; color: #991b1b }
-  select, input[type=date], input[type=text], input[type=number], textarea {
-    padding: 6px 10px; border-radius: 8px; border: 1px solid #ead8bf;
-    font-size: 13px; background: #fff; font-family: inherit; width: 100%;
-  }
-  select { cursor: pointer }
   .meta { font-size: 12px; color: #9a8674; margin-top: 4px }
   .price { font-size: 18px; font-weight: 800; color: #a8160c }
   h2 { font-size: 15px; font-weight: 800; margin-bottom: 12px; color: #5b4636 }
@@ -39,38 +34,56 @@
   .summary-item { text-align: center }
   .summary-item .val { font-size: 22px; font-weight: 900 }
   .summary-item .lbl { font-size: 11px; opacity: .8; margin-top: 2px }
-  .btn-reset { background: #f4b528; color: #1a0e08; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; align-self: flex-end; width: auto }
-  .btn-excel { background: #1d6f42; color: #fff; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-right: auto }
-  .btn-primary { background: #a8160c; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 700; cursor: pointer; width: auto }
-  .btn-secondary { background: #fff; color: #1a0e08; border: 1.5px solid #ead8bf; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; width: auto }
-  .btn-danger { background: #fee2e2; color: #991b1b; border: none; border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 700; cursor: pointer; width: auto }
-  .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; justify-content:center; align-items:flex-start; padding-top: 40px; padding-bottom: 40px; overflow-y: auto }
+  input[type=date], select { padding: 6px 10px; border-radius: 8px; border: 1px solid #ead8bf; font-size: 13px; cursor: pointer; background: #fff; font-family: inherit }
+  .btn-reset  { background: #f4b528; color: #1a0e08; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; align-self: flex-end }
+  .btn-excel  { background: #1d6f42; color: #fff; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-right: auto }
+  .btn-primary   { background: #a8160c; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer }
+  .btn-secondary { background: #fff; color: #1a0e08; border: 1.5px solid #ead8bf; border-radius: 8px; padding: 8px 16px; font-size: 12px; font-weight: 700; cursor: pointer }
+  .btn-seed   { background: #fde6a8; color: #7a0d05; border: none; border-radius: 8px; padding: 8px 16px; font-size: 12px; font-weight: 700; cursor: pointer }
+  .btn-danger { background: #fee2e2; color: #991b1b; border: none; border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 700; cursor: pointer }
+  .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100; justify-content:center; align-items:flex-start; padding: 40px 16px; overflow-y:auto }
   .modal-backdrop.open { display:flex }
-  .modal { background:#fff; border-radius:16px; width:min(95vw,580px); max-height:80vh; overflow-y:auto; padding:24px; margin: auto }
-  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px }
+  .modal { background:#fff; border-radius:16px; width:min(95vw,560px); padding:24px; margin:auto }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px }
   .modal-header h3 { font-size:16px; font-weight:800; color:#a8160c }
   .close-btn { background:none; border:none; font-size:20px; cursor:pointer; color:#9a8674 }
   .order-mini { border:1px solid #ead8bf; border-radius:10px; padding:12px; margin-bottom:10px }
-  .divider { height:1px; background:#ead8bf; margin: 6px 0 }
+  .divider { height:1px; background:#ead8bf; margin: 8px 0 }
   .form-group { margin-bottom: 14px }
-  .form-group label { display: block; font-size: 12px; color: #5b4636; font-weight: 700; margin-bottom: 5px }
-  .form-row { display: flex; gap: 12px }
-  .form-row .form-group { flex: 1 }
-  .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px }
-  .toggle { position: relative; display: inline-block; width: 44px; height: 24px }
-  .toggle input { opacity: 0; width: 0; height: 0 }
-  .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #ccc; border-radius: 24px; transition: .3s }
-  .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s }
-  .toggle input:checked + .toggle-slider { background: #a8160c }
-  .toggle input:checked + .toggle-slider:before { transform: translateX(20px) }
-  .product-card { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; border: 1px solid #ead8bf; display: flex; gap: 12px; align-items: flex-start }
-  .product-img { width: 72px; height: 72px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: #f5ece0 }
-  .product-img-placeholder { width: 72px; height: 72px; border-radius: 10px; background: #f5ece0; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 28px }
-  .product-actions { display: flex; gap: 6px; margin-top: 8px }
-  .avail-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-left: 5px }
+  .form-group label { display:block; font-size:12px; color:#5b4636; font-weight:700; margin-bottom:5px }
+  .form-group input[type=text], .form-group input[type=number], .form-group textarea {
+    width:100%; padding:9px 12px; border-radius:8px; border:1.5px solid #ead8bf;
+    font-size:14px; color:#1a0e08; background:#fff; font-family:inherit; outline:none;
+    transition: border-color .2s;
+  }
+  .form-group input:focus, .form-group textarea:focus { border-color: #a8160c }
+  .form-row { display:flex; gap:12px }
+  .form-row .form-group { flex:1 }
+  .toggle-row { display:flex; align-items:center; gap:10px; margin-bottom:14px }
+  .toggle { position:relative; display:inline-block; width:44px; height:24px }
+  .toggle input { opacity:0; width:0; height:0 }
+  .toggle-slider { position:absolute; cursor:pointer; inset:0; background:#ccc; border-radius:24px; transition:.3s }
+  .toggle-slider:before { position:absolute; content:""; height:18px; width:18px; left:3px; bottom:3px; background:white; border-radius:50%; transition:.3s }
+  .toggle input:checked + .toggle-slider { background:#a8160c }
+  .toggle input:checked + .toggle-slider:before { transform:translateX(20px) }
+  .product-card { background:#fff; border-radius:12px; padding:14px 16px; margin-bottom:12px; border:1px solid #ead8bf; display:flex; gap:12px; align-items:flex-start }
+  .product-img { width:72px; height:72px; border-radius:10px; object-fit:cover; flex-shrink:0 }
+  .product-img-placeholder { width:72px; height:72px; border-radius:10px; background:#f5ece0; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:28px }
+  .avail-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-left:4px; vertical-align:middle }
+  /* Drop zone */
+  .drop-zone {
+    border: 2px dashed #ead8bf; border-radius: 10px; padding: 16px 12px;
+    text-align: center; cursor: pointer; transition: border-color .2s, background .2s;
+    min-height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color: #a8160c; background: #fff5f5 }
+  .drop-zone .drop-icon { font-size: 28px }
+  .drop-zone .drop-text { font-size: 12px; color: #9a8674 }
+  .drop-zone img { max-height: 100px; max-width: 100%; border-radius: 8px; object-fit: cover }
 </style>
 </head>
 <body>
+
 <header>
   <div style="width:36px;height:36px;background:#f4b528;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#1a0e08">CC</div>
   <h1>Crepe Corner — لوحة التحكم</h1>
@@ -83,8 +96,8 @@
 </nav>
 <main id="main"><div id="loading">جاري التحميل…</div></main>
 
-<!-- Customer / Order modal -->
-<div class="modal-backdrop" id="modal" onclick="closeModal(event)">
+<!-- Customer modal -->
+<div class="modal-backdrop" id="modal" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal">
     <div class="modal-header">
       <h3 id="modal-title">بيانات العميل</h3>
@@ -94,37 +107,103 @@
   </div>
 </div>
 
-<!-- Product edit modal -->
-<div class="modal-backdrop" id="product-modal" onclick="closePModal(event)">
+<!-- Product modal (static, populated via JS) -->
+<div class="modal-backdrop" id="product-modal" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal">
     <div class="modal-header">
       <h3 id="pmodal-title">منتج جديد</h3>
       <button class="close-btn" onclick="document.getElementById('product-modal').classList.remove('open')">✕</button>
     </div>
-    <div id="pmodal-body"></div>
+
+    <form id="pform" onsubmit="saveProduct(event)">
+      <input type="hidden" id="pf-id">
+
+      <div class="form-group">
+        <label>الاسم *</label>
+        <input type="text" id="pf-name" required placeholder="اسم المنتج">
+      </div>
+
+      <div class="form-group">
+        <label>الوصف</label>
+        <textarea id="pf-desc" rows="2" placeholder="وصف مختصر للمكونات أو المميزات"></textarea>
+      </div>
+
+      <!-- Drop zone -->
+      <div class="form-group">
+        <label>الصورة</label>
+        <input type="file" id="pf-file" accept="image/*" style="display:none" onchange="onFileChosen(this)">
+        <div class="drop-zone" id="drop-zone"
+             onclick="document.getElementById('pf-file').click()"
+             ondragover="onDragOver(event)"
+             ondragleave="onDragLeave(event)"
+             ondrop="onDrop(event)">
+          <div id="drop-icon" class="drop-icon">🖼️</div>
+          <div id="drop-text" class="drop-text">اسحب صورة هنا أو اضغط للاختيار</div>
+          <img id="drop-preview" style="display:none">
+        </div>
+        <div style="margin-top:6px;display:flex;gap:8px;align-items:center">
+          <span style="font-size:11px;color:#9a8674">أو أدخل رابط مباشر:</span>
+          <input type="text" id="pf-image-url" placeholder="https://..." style="flex:1;padding:5px 9px;font-size:12px;border-radius:6px;border:1px solid #ead8bf" oninput="onUrlInput(this.value)">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>السعر الأصلي (ج.م) *</label>
+          <input type="number" id="pf-price" required min="0" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>السعر بعد الخصم (ج.م)</label>
+          <input type="number" id="pf-discount" min="0" placeholder="اتركه فارغاً لو مفيش خصم">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>مدة التوصيل</label>
+          <input type="text" id="pf-dtime" placeholder="مثال: 20–30 دقيقة">
+        </div>
+        <div class="form-group">
+          <label>النوع / الفئة</label>
+          <input type="text" id="pf-type" placeholder="مثال: كريب، مشروبات">
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <label class="toggle">
+          <input type="checkbox" id="pf-avail" checked>
+          <span class="toggle-slider"></span>
+        </label>
+        <span style="font-size:13px;font-weight:700">المنتج متاح للطلب</span>
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button type="submit" class="btn-primary" style="flex:1" id="psubmit-btn">إضافة المنتج</button>
+        <button type="button" class="btn-secondary" onclick="document.getElementById('product-modal').classList.remove('open')">إلغاء</button>
+      </div>
+    </form>
   </div>
 </div>
 
 <script>
-const STATUS_AR = { pending: 'قيد الانتظار', preparing: 'جاري التحضير', on_the_way: 'في الطريق', delivered: 'تم التوصيل', cancelled: 'ملغي' }
+// ─── State ────────────────────────────────────────────────
+const STATUS_AR  = { pending: 'قيد الانتظار', preparing: 'جاري التحضير', on_the_way: 'في الطريق', delivered: 'تم التوصيل', cancelled: 'ملغي' }
 const STATUS_VALS = Object.keys(STATUS_AR)
 let allOrders = []
+let allProducts = []
 let currentTab = 'orders'
+let pendingImageData = '' // holds base64 data URL or empty string
 
+// ─── Nav ──────────────────────────────────────────────────
 function show(tab) {
   currentTab = tab
-  const navBtns = document.querySelectorAll('nav button:not(.btn-excel)')
-  navBtns.forEach((b, i) => {
-    b.classList.toggle('active',
-      (i === 0 && tab === 'orders') ||
-      (i === 1 && tab === 'customers') ||
-      (i === 2 && tab === 'products')
-    )
+  document.querySelectorAll('nav button:not(.btn-excel)').forEach((b, i) => {
+    b.classList.toggle('active', (i===0&&tab==='orders')||(i===1&&tab==='customers')||(i===2&&tab==='products'))
   })
   document.getElementById('main').innerHTML = '<div id="loading">جاري التحميل…</div>'
   if (tab === 'orders')    loadOrders(true)
   else if (tab === 'customers') loadCustomers()
-  else if (tab === 'products')  loadProducts()
+  else                     loadProducts()
 }
 
 // ─── Orders ──────────────────────────────────────────────
@@ -135,117 +214,94 @@ async function loadOrders(init) {
     if (init) renderFilters()
     applyFilters()
   } catch (e) {
-    document.getElementById('main').innerHTML = '<div id="loading" style="color:#a8160c">خطأ في تحميل البيانات: ' + e.message + '</div>'
+    document.getElementById('main').innerHTML = '<div id="loading" style="color:#a8160c">خطأ: ' + e.message + '</div>'
   }
 }
 
 function renderFilters() {
   document.getElementById('main').innerHTML =
     '<div class="filters" id="filters-bar">' +
-      '<div class="filters-group"><label>من تاريخ</label><input type="date" id="f-from" style="width:auto" onchange="applyFilters()"></div>' +
-      '<div class="filters-group"><label>إلى تاريخ</label><input type="date" id="f-to" style="width:auto" onchange="applyFilters()"></div>' +
-      '<div class="filters-group"><label>الحالة</label><select id="f-status" style="width:auto" onchange="applyFilters()"><option value="">الكل</option>' +
+      '<div class="filters-group"><label>من تاريخ</label><input type="date" id="f-from" onchange="applyFilters()"></div>' +
+      '<div class="filters-group"><label>إلى تاريخ</label><input type="date" id="f-to" onchange="applyFilters()"></div>' +
+      '<div class="filters-group"><label>الحالة</label>' +
+        '<select id="f-status" onchange="applyFilters()"><option value="">الكل</option>' +
         STATUS_VALS.map(s => '<option value="' + s + '">' + STATUS_AR[s] + '</option>').join('') +
-      '</select></div>' +
+        '</select></div>' +
       '<button class="btn-reset" onclick="resetFilters()">مسح الفلاتر</button>' +
     '</div>' +
-    '<div id="summary-bar"></div>' +
-    '<div id="orders-list"></div>'
+    '<div id="summary-bar"></div><div id="orders-list"></div>'
 }
 
 function applyFilters() {
-  const from   = document.getElementById('f-from') ? document.getElementById('f-from').value : ''
-  const to     = document.getElementById('f-to') ? document.getElementById('f-to').value : ''
-  const status = document.getElementById('f-status') ? document.getElementById('f-status').value : ''
-
+  const from   = (document.getElementById('f-from')   || {}).value || ''
+  const to     = (document.getElementById('f-to')     || {}).value || ''
+  const status = (document.getElementById('f-status') || {}).value || ''
   const filtered = allOrders.filter(o => {
     const d = new Date(o.created_at)
     if (from && d < new Date(from)) return false
-    if (to && d > new Date(to + 'T23:59:59')) return false
+    if (to   && d > new Date(to + 'T23:59:59')) return false
     if (status && o.status !== status) return false
     return true
   })
-
   const totalPrice = filtered.reduce((s, o) => s + Number(o.total), 0)
-  const summaryEl = document.getElementById('summary-bar')
-  if (summaryEl) {
-    summaryEl.innerHTML =
-      '<div class="summary">' +
-        '<div class="summary-item"><div class="val">' + filtered.length + '</div><div class="lbl">طلب</div></div>' +
-        '<div style="width:1px;background:rgba(255,255,255,.3);height:36px"></div>' +
-        '<div class="summary-item"><div class="val">' + totalPrice.toLocaleString('ar-EG') + ' ج.م</div><div class="lbl">إجمالي المبيعات</div></div>' +
-      '</div>'
-  }
-
-  const listEl = document.getElementById('orders-list')
-  if (!listEl) return
-
-  if (!filtered.length) {
-    listEl.innerHTML = '<div id="loading">لا توجد طلبات بهذه الفلاتر</div>'
-    return
-  }
-
-  listEl.innerHTML = filtered.map(o => {
+  const sb = document.getElementById('summary-bar')
+  if (sb) sb.innerHTML =
+    '<div class="summary">' +
+      '<div class="summary-item"><div class="val">' + filtered.length + '</div><div class="lbl">طلب</div></div>' +
+      '<div style="width:1px;background:rgba(255,255,255,.3);height:36px"></div>' +
+      '<div class="summary-item"><div class="val">' + totalPrice.toLocaleString('ar-EG') + ' ج.م</div><div class="lbl">إجمالي المبيعات</div></div>' +
+    '</div>'
+  const ol = document.getElementById('orders-list')
+  if (!ol) return
+  if (!filtered.length) { ol.innerHTML = '<div id="loading">لا توجد طلبات بهذه الفلاتر</div>'; return }
+  ol.innerHTML = filtered.map(o => {
     const items = Array.isArray(o.items) ? o.items : JSON.parse(o.items)
     return '<div class="card">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
-        '<div>' +
-          '<div style="font-weight:800;font-size:15px">#' + o.order_number + ' · ' + o.customer_name + '</div>' +
+        '<div><div style="font-weight:800;font-size:15px">#' + o.order_number + ' · ' + o.customer_name + '</div>' +
           '<div class="meta">' + o.phone + ' · ' + o.service_type + ' · ' + o.payment_method + '</div>' +
           (o.address ? '<div class="meta">📍 ' + o.address + '</div>' : '') +
           '<div class="meta" style="margin-top:6px">' + items.map(i => i.name + ' ×' + i.quantity).join(' · ') + '</div>' +
           (o.delivery_notes ? '<div class="meta" style="color:#5b4636;font-style:italic">📝 ' + o.delivery_notes + '</div>' : '') +
         '</div>' +
-        '<div style="text-align:left;flex-shrink:0">' +
-          '<div class="price">' + o.total + ' ج.م</div>' +
-          '<div class="meta">' + new Date(o.created_at).toLocaleString('ar-EG') + '</div>' +
-        '</div>' +
+        '<div style="text-align:left;flex-shrink:0"><div class="price">' + o.total + ' ج.م</div>' +
+          '<div class="meta">' + new Date(o.created_at).toLocaleString('ar-EG') + '</div></div>' +
       '</div>' +
       '<div style="margin-top:10px;display:flex;align-items:center;gap:8px">' +
         '<span class="badge ' + o.status + '">' + (STATUS_AR[o.status] || o.status) + '</span>' +
-        '<select onchange="updateStatus(' + o.id + ', this.value)" style="width:auto">' +
-          STATUS_VALS.map(s => '<option value="' + s + '"' + (s === o.status ? ' selected' : '') + '>' + STATUS_AR[s] + '</option>').join('') +
+        '<select onchange="updateStatus(' + o.id + ',this.value)">' +
+          STATUS_VALS.map(s => '<option value="' + s + '"' + (s===o.status?' selected':'') + '>' + STATUS_AR[s] + '</option>').join('') +
         '</select>' +
-      '</div>' +
-    '</div>'
+      '</div></div>'
   }).join('')
 }
 
 function resetFilters() {
-  if (document.getElementById('f-from'))   document.getElementById('f-from').value = ''
-  if (document.getElementById('f-to'))     document.getElementById('f-to').value = ''
-  if (document.getElementById('f-status')) document.getElementById('f-status').value = ''
+  ['f-from','f-to','f-status'].forEach(id => { const el = document.getElementById(id); if (el) el.value = '' })
   applyFilters()
 }
 
 async function updateStatus(id, status) {
-  await fetch('/api/orders/' + id + '/status', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
+  await fetch('/api/orders/' + id + '/status', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status}) })
   applyFilters()
 }
 
 // ─── Customers ───────────────────────────────────────────
 async function loadCustomers() {
   let data
-  try {
-    data = await fetch('/api/customers?limit=500').then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
-  } catch (e) {
-    document.getElementById('main').innerHTML = '<div id="loading" style="color:#a8160c">خطأ في تحميل البيانات: ' + e.message + '</div>'
-    return
-  }
+  try { data = await fetch('/api/customers?limit=500').then(r => { if (!r.ok) throw new Error(r.status); return r.json() }) }
+  catch (e) { document.getElementById('main').innerHTML = '<div id="loading" style="color:#a8160c">خطأ: ' + e.message + '</div>'; return }
   if (!data.length) { document.getElementById('main').innerHTML = '<div id="loading">لا يوجد عملاء بعد</div>'; return }
   document.getElementById('main').innerHTML =
-    '<h2 style="margin-bottom:12px">العملاء (' + data.length + ')</h2>' +
+    '<h2>العملاء (' + data.length + ')</h2>' +
     data.map(c =>
       '<div class="card card-clickable" onclick="openCustomer(' + c.id + ')">' +
         '<div style="display:flex;justify-content:space-between;align-items:center">' +
-          '<div>' +
-            '<div style="font-weight:800;font-size:15px">' + c.name + '</div>' +
+          '<div><div style="font-weight:800;font-size:15px">' + c.name + '</div>' +
             '<div class="meta">' + c.phone + '</div>' +
             (c.address ? '<div class="meta">📍 ' + c.address + '</div>' : '') +
-          '</div>' +
-          '<div style="color:#a8160c;font-size:20px">›</div>' +
-        '</div>' +
-      '</div>'
+          '</div><div style="color:#a8160c;font-size:20px">›</div>' +
+        '</div></div>'
     ).join('')
 }
 
@@ -253,18 +309,15 @@ async function openCustomer(id) {
   document.getElementById('modal-title').textContent = 'بيانات العميل'
   document.getElementById('modal-body').innerHTML = '<div style="text-align:center;padding:30px;color:#9a8674">جاري التحميل…</div>'
   document.getElementById('modal').classList.add('open')
-
   const data = await fetch('/api/customers/' + id).then(r => r.json())
   document.getElementById('modal-title').textContent = data.name + ' — ' + data.phone
   const totalSpent = data.orders.reduce((s, o) => s + Number(o.total), 0)
-
   document.getElementById('modal-body').innerHTML =
     (data.address ? '<div class="meta" style="margin-bottom:10px">📍 ' + data.address + '</div>' : '') +
     '<div style="display:flex;gap:20px;margin-bottom:16px">' +
       '<div><div style="font-size:20px;font-weight:900;color:#a8160c">' + data.orders.length + '</div><div class="meta">طلب</div></div>' +
       '<div><div style="font-size:20px;font-weight:900;color:#a8160c">' + totalSpent.toLocaleString('ar-EG') + ' ج.م</div><div class="meta">إجمالي الإنفاق</div></div>' +
-    '</div>' +
-    '<div class="divider"></div>' +
+    '</div><div class="divider"></div>' +
     '<div style="margin-top:12px">' +
       (data.orders.length === 0 ? '<div class="meta">لا توجد طلبات</div>' :
         data.orders.map(o => {
@@ -283,117 +336,194 @@ async function openCustomer(id) {
     '</div>'
 }
 
-function closeModal(e) {
-  if (e.target.id === 'modal') document.getElementById('modal').classList.remove('open')
-}
-
 // ─── Products ────────────────────────────────────────────
-let allProducts = []
-
 async function loadProducts() {
   try {
-    const data = await fetch('/api/products').then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
-    allProducts = data
+    allProducts = await fetch('/api/products').then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
     renderProducts()
   } catch (e) {
-    document.getElementById('main').innerHTML = '<div id="loading" style="color:#a8160c">خطأ في تحميل المنتجات: ' + e.message + '</div>'
+    document.getElementById('main').innerHTML = '<div id="loading" style="color:#a8160c">خطأ: ' + e.message + '</div>'
   }
 }
 
 function renderProducts() {
-  const el = document.getElementById('main')
-  el.innerHTML =
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+  const header =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">' +
       '<h2 style="margin:0">المنتجات (' + allProducts.length + ')</h2>' +
-      '<button class="btn-primary" onclick="openProductModal(null)">+ منتج جديد</button>' +
-    '</div>' +
-    (allProducts.length === 0 ? '<div id="loading">لا توجد منتجات بعد. أضف أول منتج!</div>' :
-      allProducts.map(p => renderProductCard(p)).join('')
-    )
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        (allProducts.length === 0 ? '<button class="btn-seed" onclick="seedProducts()">📥 استيراد المنتجات الموجودة</button>' : '') +
+        '<button class="btn-primary" onclick="openProductModal(null)">+ منتج جديد</button>' +
+      '</div>' +
+    '</div>'
+
+  if (allProducts.length === 0) {
+    document.getElementById('main').innerHTML = header +
+      '<div id="loading" style="padding:20px">لا توجد منتجات — استورد المنتجات الموجودة أو أضف منتجاً جديداً.</div>'
+    return
+  }
+
+  // Group by type
+  const groups = {}
+  allProducts.forEach(p => {
+    const key = p.type || 'بدون فئة'
+    if (!groups[key]) groups[key] = []
+    groups[key].push(p)
+  })
+
+  const sectionsHtml = Object.entries(groups).map(([type, items]) =>
+    '<div style="margin-bottom:6px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;background:#fff;border:1px solid #ead8bf;border-radius:12px;padding:12px 16px;margin-bottom:8px" onclick="toggleSection(this)">' +
+        '<div style="font-weight:800;font-size:14px;color:#5b4636">' + esc(type) + ' <span style="font-size:12px;color:#9a8674;font-weight:600">(' + items.length + ')</span></div>' +
+        '<span style="font-size:18px;color:#a8160c;transition:transform .2s" class="sec-arrow">▾</span>' +
+      '</div>' +
+      '<div class="sec-body">' + items.map(p => productCardHtml(p)).join('') + '</div>' +
+    '</div>'
+  ).join('')
+
+  document.getElementById('main').innerHTML = header + sectionsHtml
 }
 
-function renderProductCard(p) {
-  const hasDiscount = p.discounted_price && p.discounted_price < p.original_price
-  const imgHtml = p.image_url
-    ? '<img class="product-img" src="' + p.image_url + '" alt="' + p.name + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
-      '<div class="product-img-placeholder" style="display:none">🥞</div>'
-    : '<div class="product-img-placeholder">🥞</div>'
+function toggleSection(header) {
+  const body  = header.nextElementSibling
+  const arrow = header.querySelector('.sec-arrow')
+  const open  = body.style.display !== 'none'
+  body.style.display  = open ? 'none' : 'block'
+  arrow.style.transform = open ? 'rotate(-90deg)' : 'rotate(0deg)'
+}
 
-  return '<div class="product-card" id="pcard-' + p.id + '">' +
+function productCardHtml(p) {
+  const hasDiscount = p.discounted_price && Number(p.discounted_price) < Number(p.original_price)
+  let imgHtml
+  if (p.image_url) {
+    imgHtml = '<img class="product-img" src="' + esc(p.image_url) + '" alt="" onerror="this.style.display=\'none\'">'
+  } else {
+    imgHtml = '<div class="product-img-placeholder">🥞</div>'
+  }
+  return '<div class="product-card">' +
     imgHtml +
     '<div style="flex:1;min-width:0">' +
       '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
-        '<div style="font-weight:800;font-size:15px">' + p.name + '</div>' +
-        '<span class="avail-dot" style="background:' + (p.available ? '#1f7a3f' : '#991b1b') + '"></span>' +
-        '<span style="font-size:11px;color:' + (p.available ? '#1f7a3f' : '#991b1b') + '">' + (p.available ? 'متاح' : 'غير متاح') + '</span>' +
-        (p.type ? '<span style="background:#fde6a8;color:#7a0d05;border-radius:6px;padding:1px 8px;font-size:11px;font-weight:700">' + p.type + '</span>' : '') +
+        '<div style="font-weight:800;font-size:15px">' + esc(p.name) + '</div>' +
+        '<span class="avail-dot" style="background:' + (p.available?'#1f7a3f':'#991b1b') + '"></span>' +
+        '<span style="font-size:11px;color:' + (p.available?'#1f7a3f':'#991b1b') + '">' + (p.available?'متاح':'غير متاح') + '</span>' +
+        (p.type ? '<span style="background:#fde6a8;color:#7a0d05;border-radius:6px;padding:1px 8px;font-size:11px;font-weight:700">' + esc(p.type) + '</span>' : '') +
       '</div>' +
-      (p.description ? '<div class="meta" style="margin-top:3px">' + p.description + '</div>' : '') +
+      (p.description ? '<div class="meta" style="margin-top:3px">' + esc(p.description) + '</div>' : '') +
       '<div style="display:flex;gap:14px;margin-top:6px;align-items:baseline">' +
         (hasDiscount
           ? '<span style="font-size:16px;font-weight:900;color:#a8160c">' + Number(p.discounted_price).toLocaleString('ar-EG') + ' ج.م</span>' +
             '<span style="font-size:12px;color:#9a8674;text-decoration:line-through">' + Number(p.original_price).toLocaleString('ar-EG') + ' ج.م</span>'
           : '<span style="font-size:16px;font-weight:900;color:#a8160c">' + Number(p.original_price).toLocaleString('ar-EG') + ' ج.م</span>'
         ) +
-        (p.delivery_time ? '<span class="meta">⏱ ' + p.delivery_time + '</span>' : '') +
+        (p.delivery_time ? '<span class="meta">⏱ ' + esc(p.delivery_time) + '</span>' : '') +
       '</div>' +
-      '<div class="product-actions">' +
+      '<div style="display:flex;gap:6px;margin-top:8px">' +
         '<button class="btn-secondary" onclick="openProductModal(' + p.id + ')">✏️ تعديل</button>' +
         '<button class="btn-danger" onclick="deleteProduct(' + p.id + ')">🗑 حذف</button>' +
       '</div>' +
-    '</div>' +
-  '</div>'
+    '</div></div>'
 }
 
 function openProductModal(id) {
   const p = id ? allProducts.find(x => x.id === id) : null
   document.getElementById('pmodal-title').textContent = p ? 'تعديل: ' + p.name : 'منتج جديد'
-  document.getElementById('pmodal-body').innerHTML =
-    '<form id="pform" onsubmit="saveProduct(event,' + (id || 'null') + ')">' +
-      '<div class="form-group"><label>الاسم *</label><input type="text" id="pf-name" value="' + (p ? esc(p.name) : '') + '" required></div>' +
-      '<div class="form-group"><label>الوصف</label><textarea id="pf-desc" rows="2">' + (p && p.description ? esc(p.description) : '') + '</textarea></div>' +
-      '<div class="form-group"><label>رابط الصورة (URL)</label><input type="text" id="pf-image" value="' + (p && p.image_url ? esc(p.image_url) : '') + '" placeholder="https://..."></div>' +
-      '<div class="form-row">' +
-        '<div class="form-group"><label>السعر الأصلي (ج.م) *</label><input type="number" id="pf-price" value="' + (p ? p.original_price : '') + '" min="0" required></div>' +
-        '<div class="form-group"><label>السعر بعد الخصم (ج.م)</label><input type="number" id="pf-discount" value="' + (p && p.discounted_price ? p.discounted_price : '') + '" min="0" placeholder="اتركه فارغ لو مفيش خصم"></div>' +
-      '</div>' +
-      '<div class="form-row">' +
-        '<div class="form-group"><label>مدة التوصيل</label><input type="text" id="pf-dtime" value="' + (p && p.delivery_time ? esc(p.delivery_time) : '') + '" placeholder="مثال: 20–30 دقيقة"></div>' +
-        '<div class="form-group"><label>النوع / الفئة</label><input type="text" id="pf-type" value="' + (p && p.type ? esc(p.type) : '') + '" placeholder="مثال: كريب، مشروبات"></div>' +
-      '</div>' +
-      '<div class="toggle-row">' +
-        '<label class="toggle"><input type="checkbox" id="pf-avail"' + (p ? (p.available ? ' checked' : '') : ' checked') + '><span class="toggle-slider"></span></label>' +
-        '<span style="font-size:13px;font-weight:700">المنتج متاح للطلب</span>' +
-      '</div>' +
-      '<div style="display:flex;gap:10px;margin-top:6px">' +
-        '<button type="submit" class="btn-primary" style="flex:1">' + (p ? 'حفظ التغييرات' : 'إضافة المنتج') + '</button>' +
-        '<button type="button" class="btn-secondary" onclick="document.getElementById(\'product-modal\').classList.remove(\'open\')">إلغاء</button>' +
-      '</div>' +
-    '</form>'
+  document.getElementById('pf-id').value       = p ? p.id : ''
+  document.getElementById('pf-name').value     = p ? p.name : ''
+  document.getElementById('pf-desc').value     = p ? (p.description || '') : ''
+  document.getElementById('pf-price').value    = p ? p.original_price : ''
+  document.getElementById('pf-discount').value = p && p.discounted_price ? p.discounted_price : ''
+  document.getElementById('pf-dtime').value    = p ? (p.delivery_time || '') : ''
+  document.getElementById('pf-type').value     = p ? (p.type || '') : ''
+  document.getElementById('pf-avail').checked  = p ? Boolean(p.available) : true
+  document.getElementById('psubmit-btn').textContent = p ? 'حفظ التغييرات' : 'إضافة المنتج'
+  document.getElementById('pf-file').value = ''
+  // Reset drop zone
+  pendingImageData = ''
+  const existingUrl = p ? (p.image_url || '') : ''
+  document.getElementById('pf-image-url').value = existingUrl
+  setDropZonePreview(existingUrl)
   document.getElementById('product-modal').classList.add('open')
 }
 
-async function saveProduct(e, id) {
+function setDropZonePreview(src) {
+  const icon = document.getElementById('drop-icon')
+  const text = document.getElementById('drop-text')
+  const prev = document.getElementById('drop-preview')
+  if (src) {
+    icon.style.display = 'none'
+    text.style.display = 'none'
+    prev.style.display = 'block'
+    prev.src = src
+  } else {
+    icon.style.display = 'block'
+    text.style.display = 'block'
+    prev.style.display = 'none'
+    prev.src = ''
+  }
+}
+
+function onUrlInput(val) {
+  pendingImageData = ''
+  setDropZonePreview(val)
+}
+
+function onDragOver(e) {
   e.preventDefault()
+  document.getElementById('drop-zone').classList.add('dragover')
+}
+
+function onDragLeave(e) {
+  document.getElementById('drop-zone').classList.remove('dragover')
+}
+
+function onDrop(e) {
+  e.preventDefault()
+  document.getElementById('drop-zone').classList.remove('dragover')
+  const file = e.dataTransfer.files[0]
+  if (file && file.type.startsWith('image/')) readImageFile(file)
+}
+
+function onFileChosen(input) {
+  const file = input.files[0]
+  if (file) readImageFile(file)
+}
+
+function readImageFile(file) {
+  const reader = new FileReader()
+  reader.onload = ev => {
+    pendingImageData = ev.target.result
+    document.getElementById('pf-image-url').value = ''
+    setDropZonePreview(pendingImageData)
+  }
+  reader.readAsDataURL(file)
+}
+
+async function saveProduct(e) {
+  e.preventDefault()
+  const id  = document.getElementById('pf-id').value
+  const urlVal = document.getElementById('pf-image-url').value.trim()
+  const imageUrl = pendingImageData || urlVal || null
   const body = {
     name:             document.getElementById('pf-name').value.trim(),
     description:      document.getElementById('pf-desc').value.trim() || null,
-    image_url:        document.getElementById('pf-image').value.trim() || null,
+    image_url:        imageUrl,
     original_price:   Number(document.getElementById('pf-price').value),
     discounted_price: document.getElementById('pf-discount').value ? Number(document.getElementById('pf-discount').value) : null,
     delivery_time:    document.getElementById('pf-dtime').value.trim() || null,
     type:             document.getElementById('pf-type').value.trim() || null,
     available:        document.getElementById('pf-avail').checked,
   }
-  const url    = id ? '/api/products/' + id : '/api/products'
-  const method = id ? 'PUT' : 'POST'
   try {
-    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const res = await fetch(id ? '/api/products/' + id : '/api/products', {
+      method: id ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
     if (!res.ok) throw new Error(res.status)
     document.getElementById('product-modal').classList.remove('open')
     loadProducts()
   } catch (err) {
-    alert('حصل خطأ أثناء الحفظ: ' + err.message)
+    alert('حصل خطأ: ' + err.message)
   }
 }
 
@@ -403,62 +533,51 @@ async function deleteProduct(id) {
   loadProducts()
 }
 
-function closePModal(e) {
-  if (e.target.id === 'product-modal') document.getElementById('product-modal').classList.remove('open')
+async function seedProducts() {
+  if (!confirm('هيضيف المنتجات الموجودة في القائمة كلها. تكمل؟')) return
+  try {
+    const res = await fetch('/api/products/seed', { method: 'POST' })
+    const data = await res.json()
+    alert('تم الاستيراد! ' + (data.inserted || 0) + ' منتج اتضاف.')
+    loadProducts()
+  } catch (e) {
+    alert('خطأ في الاستيراد: ' + e.message)
+  }
 }
 
-function esc(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-}
-
-// ─── Excel export ─────────────────────────────────────────
+// ─── Excel ────────────────────────────────────────────────
 async function exportExcel() {
   const [ordersRaw, customersRaw, productsRaw] = await Promise.all([
     fetch('/api/orders?limit=5000').then(r => r.json()),
     fetch('/api/customers?limit=5000').then(r => r.json()),
     fetch('/api/products').then(r => r.json()),
   ])
-
   const ordersSheet = ordersRaw.map(o => ({
-    'رقم الطلب':    o.order_number,
-    'اسم العميل':   o.customer_name,
-    'التليفون':     o.phone,
-    'العنوان':      o.address || '',
-    'نوع الخدمة':   o.service_type,
-    'طريقة الدفع':  o.payment_method,
-    'الأصناف':      (Array.isArray(o.items) ? o.items : JSON.parse(o.items)).map(i => i.name + ' ×' + i.quantity).join(' | '),
-    'المجموع':      o.subtotal,
-    'رسوم التوصيل': o.delivery_fee,
-    'الإجمالي':     o.total,
-    'ملاحظات':      o.delivery_notes || '',
-    'الحالة':       STATUS_AR[o.status] || o.status,
+    'رقم الطلب':    o.order_number, 'اسم العميل': o.customer_name, 'التليفون': o.phone,
+    'العنوان':      o.address || '', 'نوع الخدمة': o.service_type, 'طريقة الدفع': o.payment_method,
+    'الأصناف':      (Array.isArray(o.items)?o.items:JSON.parse(o.items)).map(i=>i.name+' ×'+i.quantity).join(' | '),
+    'المجموع':      o.subtotal, 'رسوم التوصيل': o.delivery_fee, 'الإجمالي': o.total,
+    'ملاحظات':      o.delivery_notes || '', 'الحالة': STATUS_AR[o.status]||o.status,
     'التاريخ':      new Date(o.created_at).toLocaleString('ar-EG'),
   }))
-
   const customersSheet = customersRaw.map(c => ({
-    'الاسم':         c.name,
-    'التليفون':      c.phone,
-    'العنوان':       c.address || '',
-    'تاريخ التسجيل': new Date(c.created_at).toLocaleString('ar-EG'),
+    'الاسم': c.name, 'التليفون': c.phone, 'العنوان': c.address||'', 'تاريخ التسجيل': new Date(c.created_at).toLocaleString('ar-EG'),
   }))
-
   const productsSheet = productsRaw.map(p => ({
-    'الاسم':           p.name,
-    'الوصف':           p.description || '',
-    'النوع':           p.type || '',
-    'السعر الأصلي':    p.original_price,
-    'السعر بعد الخصم': p.discounted_price || '',
-    'مدة التوصيل':     p.delivery_time || '',
-    'متاح':            p.available ? 'نعم' : 'لا',
+    'الاسم': p.name, 'الوصف': p.description||'', 'النوع': p.type||'',
+    'السعر الأصلي': p.original_price, 'السعر بعد الخصم': p.discounted_price||'',
+    'مدة التوصيل': p.delivery_time||'', 'متاح': p.available?'نعم':'لا',
   }))
-
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ordersSheet),    'الطلبات')
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(customersSheet), 'العملاء')
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(productsSheet),  'المنتجات')
-
-  const date = new Date().toLocaleDateString('ar-EG').replace(/\//g, '-')
+  const date = new Date().toLocaleDateString('ar-EG').replace(/\//g,'-')
   XLSX.writeFile(wb, 'crepe-corner-' + date + '.xlsx')
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
 
 // Boot
