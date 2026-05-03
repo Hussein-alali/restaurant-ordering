@@ -101,6 +101,12 @@ await pool.query(`
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS offer_items (
+    offer_id   INTEGER REFERENCES offers(id) ON DELETE CASCADE,
+    product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+    PRIMARY KEY (offer_id, product_id)
+  );
+
   CREATE TABLE IF NOT EXISTS sections (
     id          SERIAL PRIMARY KEY,
     name        TEXT NOT NULL UNIQUE,
@@ -435,14 +441,27 @@ export async function updateAdminPassword(id, password) {
 
 // ─── Offers ───────────────────────────────────────────────
 
+async function attachOfferItems(offers) {
+  if (!offers.length) return offers
+  const ids = offers.map(o => o.id)
+  const { rows } = await pool.query(
+    `SELECT oi.offer_id, p.id, p.name, p.type,
+            COALESCE(p.discounted_price, p.original_price) AS price, p.image_url
+     FROM offer_items oi JOIN products p ON p.id=oi.product_id
+     WHERE oi.offer_id = ANY($1::int[])`,
+    [ids],
+  )
+  return offers.map(o => ({ ...o, items: rows.filter(r => r.offer_id === o.id) }))
+}
+
 export async function getOffers() {
   const { rows } = await pool.query('SELECT * FROM offers ORDER BY created_at DESC')
-  return rows
+  return attachOfferItems(rows)
 }
 
 export async function getActiveOffers() {
   const { rows } = await pool.query('SELECT * FROM offers WHERE is_active=true ORDER BY created_at DESC')
-  return rows
+  return attachOfferItems(rows)
 }
 
 export async function createOffer({ title, description }) {
@@ -459,6 +478,16 @@ export async function updateOffer(id, { title, description, is_active }) {
     [title.trim(), description || null, is_active, id],
   )
   return rows[0] || null
+}
+
+export async function setOfferItems(offerId, productIds) {
+  await pool.query('DELETE FROM offer_items WHERE offer_id=$1', [offerId])
+  for (const pid of productIds) {
+    await pool.query(
+      'INSERT INTO offer_items (offer_id, product_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+      [offerId, pid],
+    )
+  }
 }
 
 export async function deleteOffer(id) {

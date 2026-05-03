@@ -201,8 +201,9 @@ function MenuPage() {
   const [activeCat, setActiveCat] = useState(CATS[0].id)
   const [unavailable, setUnavailable] = useState(new Set())
   const [descMap, setDescMap] = useState({})
-  const [siteName, setSiteName] = useState('Crepe Corner')
-  const [offers, setOffers]     = useState([])
+  const [siteName, setSiteName]           = useState('Crepe Corner')
+  const [offers, setOffers]               = useState([])
+  const [disabledSections, setDisabledSections] = useState(new Set())
   const navigate = useNavigate()
   const branch = state.selectedBranch
 
@@ -219,7 +220,21 @@ function MenuPage() {
     Promise.all([
       fetch('/api/products').then(r => r.ok ? r.json() : []),
       fetch(`/api/products/branch/${branch.id}`).then(r => r.ok ? r.json() : []),
-    ]).then(([allProducts, branchProducts]) => {
+      fetch('/api/sections').then(r => r.ok ? r.json() : []),
+    ]).then(([allProducts, branchProducts, sections]) => {
+      const disabled = new Set(
+        sections
+          .filter(s => (s.branch_availability?.[branch.id]) === false)
+          .map(s => s.name)
+      )
+      setDisabledSections(disabled)
+      setActiveCat(prev => {
+        const prevCat = CATS.find(c => c.id === prev)
+        if (prevCat && disabled.has(prevCat.ar)) {
+          return CATS.find(c => !disabled.has(c.ar))?.id ?? prev
+        }
+        return prev
+      })
       const globallyUnavailable = new Set(allProducts.filter(p => !p.available).map(p => p.name))
       const branchAvailableNames = new Set(branchProducts.map(p => p.name))
       const allDbNames = new Set(allProducts.map(p => p.name))
@@ -359,7 +374,7 @@ function MenuPage() {
       {/* Category strip */}
       <div style={{ padding: '14px 0 6px', position: 'sticky', top: 0, zIndex: 5, background: C.bg }}>
         <div style={{ display: 'flex', gap: 8, padding: '0 18px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
-          {CATS.map(c => (
+          {CATS.filter(c => !disabledSections.has(c.ar)).map(c => (
             <button
               key={c.id}
               onClick={() => setActiveCat(c.id)}

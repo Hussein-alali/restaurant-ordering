@@ -16,7 +16,7 @@ import {
   getCategories, createCategory, updateCategory, deleteCategory,
   getSettings, upsertSetting,
   getSections, createSection, updateSection, deleteSection, updateBranchSection,
-  getOffers, getActiveOffers, createOffer, updateOffer, deleteOffer,
+  getOffers, getActiveOffers, createOffer, updateOffer, setOfferItems, deleteOffer,
 } from './db.js'
 
 const __dirname  = dirname(fileURLToPath(import.meta.url))
@@ -638,16 +638,19 @@ app.get('/api/offers/active', async (req, res) => {
 })
 
 app.post('/api/offers', adminAuth, superAdminOnly, async (req, res) => {
-  const { title, description } = req.body
+  const { title, description, items = [] } = req.body
   if (!title?.trim()) return res.status(400).json({ error: 'title required' })
-  res.status(201).json(await createOffer({ title, description }))
+  const offer = await createOffer({ title, description })
+  if (items.length) await setOfferItems(offer.id, items.map(Number).filter(Boolean))
+  res.status(201).json(offer)
 })
 
 app.put('/api/offers/:id', adminAuth, superAdminOnly, async (req, res) => {
-  const { title, description, is_active } = req.body
+  const { title, description, is_active, items } = req.body
   if (!title?.trim()) return res.status(400).json({ error: 'title required' })
   const offer = await updateOffer(Number(req.params.id), { title, description, is_active: is_active !== false })
   if (!offer) return res.status(404).json({ error: 'not found' })
+  if (Array.isArray(items)) await setOfferItems(offer.id, items.map(Number).filter(Boolean))
   res.json(offer)
 })
 
