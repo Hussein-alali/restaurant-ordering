@@ -236,14 +236,7 @@ function MenuPage() {
         return prev
       })
       const globallyUnavailable = new Set(allProducts.filter(p => !p.available).map(p => p.name))
-      const branchAvailableNames = new Set(branchProducts.map(p => p.name))
-      const allDbNames = new Set(allProducts.map(p => p.name))
-      // Mark as unavailable: globally off, OR exists in DB but not in branch's products
-      const hidden = new Set([
-        ...globallyUnavailable,
-        ...[...allDbNames].filter(n => !branchAvailableNames.has(n) && !globallyUnavailable.has(n)),
-      ])
-      setUnavailable(hidden)
+      setUnavailable(globallyUnavailable)
       const dm = {}
       allProducts.forEach(p => { if (p.description) dm[p.name] = p.description })
       setDescMap(dm)
