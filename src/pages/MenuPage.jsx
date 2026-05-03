@@ -266,6 +266,12 @@ function MenuPage() {
 
   return (
     <div dir="rtl" style={{ background: C.bg, minHeight: '100vh', ...ar }}>
+      <style>{`
+        @keyframes offerSlide {
+          0%   { transform: translateX(0) }
+          100% { transform: translateX(-50%) }
+        }
+      `}</style>
       {/* Red header */}
       <div style={{
         background: `linear-gradient(180deg, ${C.redDark} 0%, ${C.red} 100%)`,
@@ -294,17 +300,49 @@ function MenuPage() {
               <div style={{ color: '#fff', fontSize: 11, opacity: 0.85, marginTop: 2 }}>{siteName}</div>
             )}
             {offers.length > 0 && (
-              <div style={{
-                marginTop: 5, background: 'rgba(244,181,40,0.18)', borderRadius: 6,
-                padding: '3px 8px', overflow: 'hidden',
-              }}>
-                <div style={{
-                  color: C.yellow, fontSize: 10, fontWeight: 800,
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                  maxWidth: 160,
-                }}>
-                  🎁 {offers.map(o => o.title).join(' · ')}
-                </div>
+              <div style={{ marginTop: 6, overflow: 'hidden', borderRadius: 8 }}>
+                {offers.length === 1 ? (
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    background: 'rgba(244,181,40,0.22)', borderRadius: 7,
+                    padding: '4px 9px',
+                  }}>
+                    <span style={{ fontSize: 12 }}>🎁</span>
+                    <span style={{ color: C.yellow, fontSize: 11, fontWeight: 800, whiteSpace: 'nowrap' }}>
+                      {offers[0].title}
+                      {offers[0].discount_percent > 0 && (
+                        <span style={{ marginRight: 5, background: C.yellow, color: C.redDark, borderRadius: 4, padding: '1px 5px', fontSize: 10 }}>
+                          {offers[0].discount_percent}%
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ overflow: 'hidden', width: '100%' }}>
+                    <div style={{
+                      display: 'flex', gap: 6, width: 'max-content',
+                      animation: `offerSlide ${offers.length * 5}s linear infinite`,
+                    }}>
+                      {[...offers, ...offers].map((o, idx) => (
+                        <div key={idx} style={{
+                          flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5,
+                          background: 'rgba(244,181,40,0.22)', borderRadius: 7,
+                          padding: '4px 9px',
+                        }}>
+                          <span style={{ fontSize: 11 }}>🎁</span>
+                          <span style={{ color: C.yellow, fontSize: 11, fontWeight: 800, whiteSpace: 'nowrap' }}>
+                            {o.title}
+                            {o.discount_percent > 0 && (
+                              <span style={{ marginRight: 5, background: C.yellow, color: C.redDark, borderRadius: 4, padding: '1px 5px', fontSize: 10 }}>
+                                {o.discount_percent}%
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
