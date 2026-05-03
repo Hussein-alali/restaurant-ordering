@@ -442,15 +442,22 @@ app.patch('/api/orders/:id/status', adminAuth, branchScope, async (req, res) => 
   res.json({ ok: true })
 })
 
-// ─── Customers (admin only) ───────────────────────────────
+// ─── Customers (admin — branch scoped) ───────────────────
 
-app.get('/api/customers', adminAuth, async (req, res) => {
-  const { limit, offset } = req.query
-  res.json(await getCustomers({ limit: Number(limit) || 50, offset: Number(offset) || 0 }))
+app.get('/api/customers', adminAuth, branchScope, async (req, res) => {
+  const { limit, offset, phone } = req.query
+  const branchId = req.scopedBranchId ?? (req.query.branchId ? Number(req.query.branchId) : undefined)
+  res.json(await getCustomers({
+    limit:    Math.min(Math.max(Number(limit)  || 50, 1), 500),
+    offset:   Math.max(Number(offset) || 0, 0),
+    branchId,
+    phone:    phone?.trim() || undefined,
+  }))
 })
 
-app.get('/api/customers/:id', adminAuth, async (req, res) => {
-  const customer = await getCustomerWithOrders(Number(req.params.id))
+app.get('/api/customers/:id', adminAuth, branchScope, async (req, res) => {
+  // Branch admin sees only orders from their own branch for this customer
+  const customer = await getCustomerWithOrders(Number(req.params.id), req.scopedBranchId || null)
   if (!customer) return res.status(404).json({ error: 'العميل مش موجود' })
   res.json(customer)
 })

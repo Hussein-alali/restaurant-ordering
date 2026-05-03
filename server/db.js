@@ -148,10 +148,23 @@ export async function upsertCustomer({ name, phone, address }) {
   return rows[0].id
 }
 
-export async function getCustomers({ limit = 50, offset = 0 } = {}) {
+export async function getCustomers({ limit = 50, offset = 0, branchId, phone } = {}) {
+  const params = []
+  const where  = []
+  if (branchId) {
+    // Only customers who have at least one order placed with this branch
+    where.push(`id IN (SELECT DISTINCT customer_id FROM orders WHERE branch_id=$${params.length + 1} AND customer_id IS NOT NULL)`)
+    params.push(branchId)
+  }
+  if (phone) {
+    where.push(`phone ILIKE $${params.length + 1}`)
+    params.push(`%${phone.replace(/%/g, '\\%').replace(/_/g, '\\_')}%`)
+  }
+  const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : ''
+  params.push(limit, offset)
   const { rows } = await pool.query(
-    'SELECT * FROM customers ORDER BY created_at DESC LIMIT $1 OFFSET $2',
-    [limit, offset],
+    `SELECT * FROM customers ${whereClause} ORDER BY created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    params,
   )
   return rows
 }
@@ -162,11 +175,13 @@ export async function getCustomerByPhone(phone) {
   return getCustomerWithOrders(rows[0].id)
 }
 
-export async function getCustomerWithOrders(id) {
+export async function getCustomerWithOrders(id, branchId = null) {
   const { rows: cr } = await pool.query('SELECT * FROM customers WHERE id=$1', [id])
   if (!cr[0]) return null
+  const filter = branchId ? 'AND branch_id=$2' : ''
+  const params = branchId ? [id, branchId] : [id]
   const { rows: or } = await pool.query(
-    'SELECT * FROM orders WHERE customer_id=$1 ORDER BY created_at DESC', [id],
+    `SELECT * FROM orders WHERE customer_id=$1 ${filter} ORDER BY created_at DESC`, params,
   )
   return { ...cr[0], orders: or.map(r => ({ ...r, items: JSON.parse(r.items) })) }
 }
