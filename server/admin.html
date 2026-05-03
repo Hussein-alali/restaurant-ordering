@@ -203,6 +203,7 @@ select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,
   <button data-tab="products"                onclick="show('products')">🥞 المنتجات</button>
   <button data-tab="branches"  id="tab-branches"    style="display:none" onclick="show('branches')">🏪 الفروع</button>
   <button data-tab="sections"                        onclick="show('sections')">📂 الأقسام</button>
+  <button data-tab="offers"   id="tab-offers"        style="display:none" onclick="show('offers')">🎁 العروض</button>
   <button data-tab="admins"    id="tab-admins"      style="display:none" onclick="show('admins')">🔑 المشرفون</button>
   <button data-tab="settings"  id="tab-settings"   style="display:none" onclick="show('settings')">⚙️ الإعدادات</button>
   <button class="btn-excel" onclick="exportExcel()">📊 Excel</button>
@@ -353,6 +354,27 @@ select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,
   </div>
 </div>
 
+<!-- Offer -->
+<div class="backdrop" id="m-offer" onclick="if(event.target===this)closeModal('m-offer')">
+  <div class="modal" style="max-width:440px">
+    <div class="mhead"><h3 id="m-offer-title">عرض جديد</h3><button class="close-x" onclick="closeModal('m-offer')">✕</button></div>
+    <form id="offerform" onsubmit="saveOffer(event)">
+      <input type="hidden" id="of-id">
+      <div class="fg2"><label>عنوان العرض *</label><input type="text" id="of-title" required placeholder="مثال: تخفيض ٢٠٪ على الكريب"></div>
+      <div class="fg2"><label>تفاصيل <span style="font-size:11px;color:#9a8674;font-weight:400">— اختياري</span></label><input type="text" id="of-desc" placeholder="وصف إضافي للعرض"></div>
+      <div class="fg2" style="display:flex;align-items:center;gap:10px">
+        <label class="toggle"><input type="checkbox" id="of-active" checked><span class="toggle-track"></span></label>
+        <label for="of-active" style="font-size:13px;font-weight:700;color:#5b4636;cursor:pointer">نشط الآن</label>
+      </div>
+      <div id="of-err" style="color:#a8160c;font-size:12px;font-weight:700;min-height:18px"></div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button type="submit" class="btn-primary" style="flex:1">حفظ العرض</button>
+        <button type="button" class="btn-secondary" onclick="closeModal('m-offer')">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Change Password -->
 <div class="backdrop" id="m-chpw" onclick="if(event.target===this)closeModal('m-chpw')">
   <div class="modal" style="max-width:400px">
@@ -375,7 +397,7 @@ select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,
 const arN = n => Number(n).toLocaleString('ar-EG')
 const STA = {pending:'قيد الانتظار',preparing:'جاري التحضير',on_the_way:'في الطريق',delivered:'تم التوصيل',cancelled:'ملغي'}
 const STAV = Object.keys(STA)
-let allOrders=[], allProducts=[], allBranches=[], allAdmins=[], allCategories=[], allSections=[], siteSettings={}
+let allOrders=[], allProducts=[], allBranches=[], allAdmins=[], allCategories=[], allSections=[], allOffers=[], siteSettings={}
 let allCustomers=[]
 let currentTab='orders', session=null, pendingImg=''
 
@@ -411,7 +433,7 @@ async function doLogin(){
     session={...d}
     applySession()
     document.getElementById('login-screen').classList.remove('show')
-    await Promise.all([loadBranches(), loadCategoriesData(), loadSiteSettings(), loadSections()])
+    await Promise.all([loadBranches(), loadCategoriesData(), loadSiteSettings(), loadSections(), loadOffers()])
     if(session.role==='super_admin') await loadAdmins()
     show('orders')
   }catch{document.getElementById('lerr').textContent='خطأ في الاتصال'}
@@ -444,6 +466,7 @@ function applySession(){
   document.getElementById('tab-branches').style.display   = isSA ? '' : 'none'
   document.getElementById('tab-admins').style.display     = isSA ? '' : 'none'
   document.getElementById('tab-settings').style.display   = isSA ? '' : 'none'
+  document.getElementById('tab-offers').style.display     = isSA ? '' : 'none'
   document.getElementById('pf-branches-wrap').style.display = isSA ? '' : 'none'
 }
 
@@ -470,6 +493,7 @@ function show(tab){
   else if(tab==='categories') renderCategories()
   else if(tab==='sections')   renderSections()
   else if(tab==='admins')     renderAdmins()
+  else if(tab==='offers')     renderOffers()
   else if(tab==='settings')   renderSettings()
 }
 
@@ -879,12 +903,23 @@ async function loadSections(){
   try{ allSections=await fetch('/api/sections').then(r=>r.ok?r.json():[]) }catch{ allSections=[] }
 }
 
+async function seedSections(){
+  if(!confirm('هيضيف ٨ أقسام افتراضية. تكمل؟')) return
+  const d=await api('/api/sections/seed',{method:'POST'}).then(r=>r.json())
+  alert('تم! '+arN(d.inserted||0)+' قسم تم إضافته')
+  await loadSections()
+  renderSections()
+}
+
 function renderSections(){
   const isSA=session?.role==='super_admin'
   document.getElementById('main').innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
       <h2 style="margin:0;font-size:18px;font-weight:800;color:#1a0e08">الأقسام (${arN(allSections.length)})</h2>
-      ${isSA?`<button class="btn-primary" onclick="openSectionModal(null)">+ قسم جديد</button>`:''}
+      <div style="display:flex;gap:8px">
+        ${isSA&&!allSections.length?`<button class="btn-warn" onclick="seedSections()">📥 استيراد الأقسام</button>`:''}
+        ${isSA?`<button class="btn-primary" onclick="openSectionModal(null)">+ قسم جديد</button>`:''}
+      </div>
     </div>
     <div id="secs-list"></div>`
   renderSectionsList()
@@ -1041,6 +1076,96 @@ async function saveSettings(){
     document.getElementById('st-msg').textContent='✓ تم الحفظ'
     setTimeout(()=>{ const el=document.getElementById('st-msg'); if(el) el.textContent='' },3000)
   }
+}
+
+// ─── Offers Tab ──────────────────────────────────────────
+
+async function loadOffers(){
+  try{ allOffers=await api('/api/offers').then(r=>r.ok?r.json():[]) }catch{ allOffers=[] }
+}
+
+function renderOffers(){
+  document.getElementById('main').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <h2 style="margin:0;font-size:18px;font-weight:800;color:#1a0e08">العروض (${arN(allOffers.length)})</h2>
+      <button class="btn-primary" onclick="openOfferModal(null)">+ عرض جديد</button>
+    </div>
+    <div id="offers-list"></div>`
+  const list=document.getElementById('offers-list')
+  if(!allOffers.length){
+    list.innerHTML='<div style="text-align:center;padding:48px 0;color:#9a8674;font-size:14px">لا توجد عروض. أضف عرضاً جديداً!</div>'
+    return
+  }
+  list.innerHTML=allOffers.map(o=>`
+    <div class="card" style="border-right:4px solid ${o.is_active?'#f4b528':'#9ca3af'}">
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,${o.is_active?'#7a0d05,#f4b528':'#6b7280,#9ca3af'});display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px">
+          🎁
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:15px;font-weight:800;color:#1a0e08">${esc(o.title)}</div>
+          ${o.description?`<div style="font-size:12px;color:#9a8674;margin-top:2px">${esc(o.description)}</div>`:''}
+          <div style="margin-top:8px">
+            <div class="toggle-wrap">
+              <label class="toggle">
+                <input type="checkbox" ${o.is_active?'checked':''} onchange="toggleOffer(${o.id},this.checked)">
+                <span class="toggle-track"></span>
+              </label>
+              <span style="font-size:12px;font-weight:700;color:${o.is_active?'#1f7a3f':'#9a8674'}">${o.is_active?'نشط':'موقوف'}</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;margin-top:2px">
+          <button class="btn-secondary btn-sm" onclick="openOfferModal(${o.id})">تعديل</button>
+          <button class="btn-danger btn-sm" onclick="deleteOfferItem(${o.id})">حذف</button>
+        </div>
+      </div>
+    </div>`).join('')
+}
+
+function openOfferModal(id){
+  const o=id?allOffers.find(x=>x.id===id):null
+  document.getElementById('of-id').value=o?o.id:''
+  document.getElementById('of-title').value=o?o.title:''
+  document.getElementById('of-desc').value=o?o.description||'':''
+  document.getElementById('of-active').checked=o?o.is_active:true
+  document.getElementById('of-err').textContent=''
+  document.getElementById('m-offer-title').textContent=o?'تعديل العرض':'عرض جديد'
+  document.getElementById('m-offer').classList.add('open')
+  document.getElementById('of-title').focus()
+}
+
+async function saveOffer(e){
+  e.preventDefault()
+  const id=document.getElementById('of-id').value
+  const title=document.getElementById('of-title').value.trim()
+  const description=document.getElementById('of-desc').value.trim()
+  const is_active=document.getElementById('of-active').checked
+  if(!title){document.getElementById('of-err').textContent='عنوان العرض مطلوب';return}
+  const r=await api(id?`/api/offers/${id}`:'/api/offers',{
+    method:id?'PUT':'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({title,description,is_active}),
+  })
+  if(!r.ok){const d=await r.json().catch(()=>({}));document.getElementById('of-err').textContent=d.error||'حصل خطأ';return}
+  closeModal('m-offer')
+  await loadOffers()
+  renderOffers()
+}
+
+async function toggleOffer(id, isActive){
+  const o=allOffers.find(x=>x.id===id)
+  if(!o) return
+  await api(`/api/offers/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:o.title,description:o.description,is_active:isActive})})
+  o.is_active=isActive
+  renderOffers()
+}
+
+async function deleteOfferItem(id){
+  if(!confirm('هتمسح العرض ده؟')) return
+  await api('/api/offers/'+id,{method:'DELETE'})
+  await loadOffers()
+  renderOffers()
 }
 
 // ─── Branches ────────────────────────────────────────────

@@ -16,6 +16,7 @@ import {
   getCategories, createCategory, updateCategory, deleteCategory,
   getSettings, upsertSetting,
   getSections, createSection, updateSection, deleteSection, updateBranchSection,
+  getOffers, getActiveOffers, createOffer, updateOffer, deleteOffer,
 } from './db.js'
 
 const __dirname  = dirname(fileURLToPath(import.meta.url))
@@ -626,7 +627,54 @@ app.delete('/api/categories/:id', adminAuth, superAdminOnly, async (req, res) =>
   res.json({ ok: true })
 })
 
+// ─── Offers ──────────────────────────────────────────────
+
+app.get('/api/offers', adminAuth, async (req, res) => {
+  res.json(await getOffers())
+})
+
+app.get('/api/offers/active', async (req, res) => {
+  res.json(await getActiveOffers())
+})
+
+app.post('/api/offers', adminAuth, superAdminOnly, async (req, res) => {
+  const { title, description } = req.body
+  if (!title?.trim()) return res.status(400).json({ error: 'title required' })
+  res.status(201).json(await createOffer({ title, description }))
+})
+
+app.put('/api/offers/:id', adminAuth, superAdminOnly, async (req, res) => {
+  const { title, description, is_active } = req.body
+  if (!title?.trim()) return res.status(400).json({ error: 'title required' })
+  const offer = await updateOffer(Number(req.params.id), { title, description, is_active: is_active !== false })
+  if (!offer) return res.status(404).json({ error: 'not found' })
+  res.json(offer)
+})
+
+app.delete('/api/offers/:id', adminAuth, superAdminOnly, async (req, res) => {
+  await deleteOffer(Number(req.params.id))
+  res.json({ ok: true })
+})
+
 // ─── Sections ────────────────────────────────────────────
+
+app.post('/api/sections/seed', adminAuth, superAdminOnly, async (req, res) => {
+  const defaults = [
+    { name: 'كريب فراخ',    description: 'كريب بالفراخ بأشكال متنوعة' },
+    { name: 'كريب لحوم',    description: 'كريب باللحوم والسجق' },
+    { name: 'كريب ميكس',   description: 'كريب بمزيج الفراخ واللحوم' },
+    { name: 'بيتزا كورنر',  description: 'بيتزا طازجة بعجينة مميزة' },
+    { name: 'بيف برجر',    description: 'برجر لحم بتشكيلة متنوعة' },
+    { name: 'الشاورما',     description: 'شاورما سورية أصيلة' },
+    { name: 'وجبات',        description: 'وجبات متكاملة' },
+    { name: 'الإضافات',     description: 'بطاطس وصوصات وإضافات' },
+  ]
+  let inserted = 0
+  for (const s of defaults) {
+    try { await createSection(s); inserted++ } catch { /* skip duplicate */ }
+  }
+  res.json({ inserted })
+})
 
 app.get('/api/sections', async (req, res) => {
   res.json(await getSections())

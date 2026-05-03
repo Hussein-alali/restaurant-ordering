@@ -202,6 +202,7 @@ function MenuPage() {
   const [unavailable, setUnavailable] = useState(new Set())
   const [descMap, setDescMap] = useState({})
   const [siteName, setSiteName] = useState('Crepe Corner')
+  const [offers, setOffers]     = useState([])
   const navigate = useNavigate()
   const branch = state.selectedBranch
 
@@ -209,6 +210,7 @@ function MenuPage() {
     fetch('/api/settings').then(r => r.ok ? r.json() : {}).then(s => {
       if (s.restaurant_name) setSiteName(s.restaurant_name)
     }).catch(() => {})
+    fetch('/api/offers/active').then(r => r.ok ? r.json() : []).then(setOffers).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -275,6 +277,20 @@ function MenuPage() {
               </div>
             ) : (
               <div style={{ color: '#fff', fontSize: 11, opacity: 0.85, marginTop: 2 }}>{siteName}</div>
+            )}
+            {offers.length > 0 && (
+              <div style={{
+                marginTop: 5, background: 'rgba(244,181,40,0.18)', borderRadius: 6,
+                padding: '3px 8px', overflow: 'hidden',
+              }}>
+                <div style={{
+                  color: C.yellow, fontSize: 10, fontWeight: 800,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  maxWidth: 160,
+                }}>
+                  🎁 {offers.map(o => o.title).join(' · ')}
+                </div>
+              </div>
             )}
           </div>
           {branch?.phone && <WhatsAppButton phone={branch.phone.replace(/^0/, '20')} />}

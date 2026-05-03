@@ -93,6 +93,14 @@ await pool.query(`
     value TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS offers (
+    id          SERIAL PRIMARY KEY,
+    title       TEXT NOT NULL,
+    description TEXT,
+    is_active   BOOLEAN NOT NULL DEFAULT true,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS sections (
     id          SERIAL PRIMARY KEY,
     name        TEXT NOT NULL UNIQUE,
@@ -425,7 +433,39 @@ export async function updateAdminPassword(id, password) {
   await pool.query('UPDATE admin_users SET password_hash=$1 WHERE id=$2', [hash, id])
 }
 
-// ─── Sections ────────────────────────────────���────────────
+// ─── Offers ───────────────────────────────────────────────
+
+export async function getOffers() {
+  const { rows } = await pool.query('SELECT * FROM offers ORDER BY created_at DESC')
+  return rows
+}
+
+export async function getActiveOffers() {
+  const { rows } = await pool.query('SELECT * FROM offers WHERE is_active=true ORDER BY created_at DESC')
+  return rows
+}
+
+export async function createOffer({ title, description }) {
+  const { rows } = await pool.query(
+    'INSERT INTO offers (title, description) VALUES ($1,$2) RETURNING *',
+    [title.trim(), description || null],
+  )
+  return rows[0]
+}
+
+export async function updateOffer(id, { title, description, is_active }) {
+  const { rows } = await pool.query(
+    'UPDATE offers SET title=$1, description=$2, is_active=$3 WHERE id=$4 RETURNING *',
+    [title.trim(), description || null, is_active, id],
+  )
+  return rows[0] || null
+}
+
+export async function deleteOffer(id) {
+  await pool.query('DELETE FROM offers WHERE id=$1', [id])
+}
+
+// ─── Sections ────────────────────────────────────────────
 
 export async function getSections() {
   const { rows: secs } = await pool.query('SELECT * FROM sections ORDER BY name ASC')
