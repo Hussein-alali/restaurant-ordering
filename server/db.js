@@ -348,10 +348,10 @@ export async function getProductsForBranch(branchId) {
     AND (
       products.type IS NULL
       OR NOT EXISTS (SELECT 1 FROM sections s WHERE s.name=products.type)
-      OR EXISTS (
+      OR NOT EXISTS (
         SELECT 1 FROM sections s
         JOIN branch_sections bs ON bs.section_id=s.id AND bs.branch_id=$1
-        WHERE s.name=products.type AND bs.is_available=true
+        WHERE s.name=products.type AND bs.is_available=false
       )
     )
     ORDER BY created_at ASC
