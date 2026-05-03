@@ -192,9 +192,9 @@ select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,
   <button data-tab="orders"    class="active" onclick="show('orders')">📋 الطلبات</button>
   <button data-tab="customers"               onclick="show('customers')">👤 العملاء</button>
   <button data-tab="products"                onclick="show('products')">🥞 المنتجات</button>
-  <button data-tab="items"                   onclick="show('items')">🍽 الأصناف</button>
-  <button data-tab="branches"  id="tab-branches" style="display:none" onclick="show('branches')">🏪 الفروع</button>
-  <button data-tab="admins"    id="tab-admins"   style="display:none" onclick="show('admins')">🔑 المشرفون</button>
+  <button data-tab="branches"  id="tab-branches"    style="display:none" onclick="show('branches')">🏪 الفروع</button>
+  <button data-tab="categories" id="tab-categories" style="display:none" onclick="show('categories')">🗂 الفئات</button>
+  <button data-tab="admins"    id="tab-admins"      style="display:none" onclick="show('admins')">🔑 المشرفون</button>
   <button class="btn-excel" onclick="exportExcel()">📊 Excel</button>
 </nav>
 
@@ -238,7 +238,7 @@ select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,
       </div>
       <div class="frow">
         <div class="fg2"><label>مدة التوصيل</label><input type="text" id="pf-dtime" placeholder="20–30 دقيقة"></div>
-        <div class="fg2"><label>الفئة / النوع</label><input type="text" id="pf-type" placeholder="كريب، بيتزا…"></div>
+        <div class="fg2"><label>الفئة</label><select id="pf-type"><option value="">— بدون فئة —</option></select></div>
       </div>
       <div class="fg2" id="pf-branches-wrap">
         <label>متاح في الفروع <span style="font-size:11px;color:#9a8674;font-weight:400">(فارغ = كل الفروع)</span></label>
@@ -310,6 +310,22 @@ select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,
   </div>
 </div>
 
+<!-- Category -->
+<div class="backdrop" id="m-category" onclick="if(event.target===this)closeModal('m-category')">
+  <div class="modal" style="max-width:400px">
+    <div class="mhead"><h3 id="m-cat-title">فئة جديدة</h3><button class="close-x" onclick="closeModal('m-category')">✕</button></div>
+    <form id="catform" onsubmit="saveCategory(event)">
+      <input type="hidden" id="cf-id">
+      <div class="fg2"><label>اسم الفئة *</label><input type="text" id="cf-name" required placeholder="مثال: كريب فراخ"></div>
+      <div class="fg2"><label>الترتيب <span style="font-size:11px;color:#9a8674;font-weight:400">(رقم أصغر = يظهر أولاً)</span></label><input type="number" id="cf-order" value="0" min="0"></div>
+      <div style="display:flex;gap:10px">
+        <button type="submit" class="btn-primary" style="flex:1" id="csubmit">إضافة</button>
+        <button type="button" class="btn-secondary" onclick="closeModal('m-category')">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Change Password -->
 <div class="backdrop" id="m-chpw" onclick="if(event.target===this)closeModal('m-chpw')">
   <div class="modal" style="max-width:400px">
@@ -331,7 +347,7 @@ select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,
 // ─── State ───────────────────────────────────────────────
 const STA = {pending:'قيد الانتظار',preparing:'جاري التحضير',on_the_way:'في الطريق',delivered:'تم التوصيل',cancelled:'ملغي'}
 const STAV = Object.keys(STA)
-let allOrders=[], allProducts=[], allBranches=[], allAdmins=[]
+let allOrders=[], allProducts=[], allBranches=[], allAdmins=[], allCategories=[]
 let allCustomers=[]
 let currentTab='orders', session=null, pendingImg=''
 
@@ -367,7 +383,7 @@ async function doLogin(){
     session={...d}
     applySession()
     document.getElementById('login-screen').classList.remove('show')
-    await loadBranches()
+    await Promise.all([loadBranches(), loadCategoriesData()])
     if(session.role==='super_admin') await loadAdmins()
     show('orders')
   }catch{document.getElementById('lerr').textContent='خطأ في الاتصال'}
@@ -397,8 +413,9 @@ function applySession(){
 
   // Show/hide super-admin-only tabs
   const isSA = session.role==='super_admin'
-  document.getElementById('tab-branches').style.display = isSA ? '' : 'none'
-  document.getElementById('tab-admins').style.display   = isSA ? '' : 'none'
+  document.getElementById('tab-branches').style.display   = isSA ? '' : 'none'
+  document.getElementById('tab-categories').style.display = isSA ? '' : 'none'
+  document.getElementById('tab-admins').style.display     = isSA ? '' : 'none'
   document.getElementById('pf-branches-wrap').style.display = isSA ? '' : 'none'
 }
 
@@ -418,12 +435,12 @@ function show(tab){
   currentTab=tab
   document.querySelectorAll('nav button[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab))
   document.getElementById('main').innerHTML='<div id="loading">جاري التحميل…</div>'
-  if(tab==='orders')    loadOrders(true)
-  else if(tab==='customers') loadCustomers()
-  else if(tab==='products')  loadProducts()
-  else if(tab==='items')     loadItems()
-  else if(tab==='branches')  renderBranches()
-  else if(tab==='admins')    renderAdmins()
+  if(tab==='orders')      loadOrders(true)
+  else if(tab==='customers')  loadCustomers()
+  else if(tab==='products')   loadProducts()
+  else if(tab==='branches')   renderBranches()
+  else if(tab==='categories') renderCategories()
+  else if(tab==='admins')     renderAdmins()
 }
 
 function closeModal(id){ document.getElementById(id).classList.remove('open') }
@@ -678,8 +695,10 @@ async function openProductModal(id){
   document.getElementById('pf-price').value    =p?p.original_price:''
   document.getElementById('pf-disc').value     =p&&p.discounted_price?p.discounted_price:''
   document.getElementById('pf-dtime').value    =p?p.delivery_time||'':''
-  document.getElementById('pf-type').value     =p?p.type||'':''
   document.getElementById('pf-avail').checked  =p?Boolean(p.available):true
+  // Populate category select from loaded categories
+  const typeEl=document.getElementById('pf-type')
+  typeEl.innerHTML='<option value="">— بدون فئة —</option>'+allCategories.map(c=>`<option value="${esc(c.name)}"${p?.type===c.name?' selected':''}>${esc(c.name)}</option>`).join('')
   document.getElementById('psubmit').textContent=p?'حفظ التغييرات':'إضافة المنتج'
   pendingImg=''
   const urlVal=p?p.image_url||'':''
@@ -741,9 +760,7 @@ async function saveProduct(e){
       const bids=getCheckedBranches()
       await api('/api/products/'+(saved.id||id)+'/branches',{method:'PUT',body:JSON.stringify({branchIds:bids})})
     }
-    closeModal('m-product')
-    if(currentTab==='items') loadItems()
-    else loadProducts()
+    closeModal('m-product'); loadProducts()
   }catch(err){alert('خطأ: '+err.message)}
 }
 
@@ -758,113 +775,68 @@ async function seedProducts(){
   const d=await r.json(); alert('تم! '+( d.inserted||0)+' منتج'); loadProducts()
 }
 
-// ─── Items Tab ───────────────────────────────────────────
+// ─── Categories Tab ──────────────────────────────────────
 
-async function loadItems(){
-  try{
-    allProducts=await fetch('/api/products').then(r=>{if(!r.ok)throw Error(r.status);return r.json()})
-    renderItems()
-  }catch(e){document.getElementById('main').innerHTML=`<div id="loading" style="color:#a8160c">خطأ: ${e.message}</div>`}
+async function loadCategoriesData(){
+  try{ allCategories=await fetch('/api/categories').then(r=>r.ok?r.json():[]) }catch{ allCategories=[] }
 }
 
-function renderItems(){
-  const isSA=session?.role==='super_admin'
-  const cats=[...new Set(allProducts.map(p=>p.type||'بدون فئة'))].sort()
-  const catOpts=cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')
-
-  document.getElementById('main').innerHTML=
-    `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-       <div style="display:flex;gap:10px;flex-wrap:wrap;flex:1">
-         <input type="text" id="it-search" placeholder="🔍 ابحث عن صنف…" oninput="filterItems()"
-           style="padding:8px 12px;border-radius:9px;border:1.5px solid #ead8bf;font-size:13px;font-family:inherit;min-width:180px;flex:1;outline:none;transition:border-color .2s"
-           onfocus="this.style.borderColor='#a8160c'" onblur="this.style.borderColor='#ead8bf'">
-         <select id="it-cat" onchange="filterItems()" style="padding:8px 12px;border-radius:9px;border:1.5px solid #ead8bf;font-size:13px;font-family:inherit">
-           <option value="">كل الفئات</option>${catOpts}
-         </select>
-         <select id="it-avail" onchange="filterItems()" style="padding:8px 12px;border-radius:9px;border:1.5px solid #ead8bf;font-size:13px;font-family:inherit">
-           <option value="">الكل</option>
-           <option value="1">متاح فقط</option>
-           <option value="0">غير متاح</option>
-         </select>
-       </div>
-       <button class="btn-primary" onclick="openProductModal(null)">+ إضافة صنف</button>
-     </div>
-     <div id="items-table"></div>`
-  filterItems()
+function renderCategories(){
+  const main=document.getElementById('main')
+  main.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <h2 style="margin:0;font-size:18px;font-weight:800;color:#1a0e08">الفئات (${allCategories.length})</h2>
+      <button class="btn-primary" onclick="openCategoryModal(null)">+ فئة جديدة</button>
+    </div>
+    <div id="cats-list"></div>`
+  const list=document.getElementById('cats-list')
+  if(!allCategories.length){
+    list.innerHTML='<div style="text-align:center;padding:48px 0;color:#9a8674;font-size:14px">لا توجد فئات بعد. أضف فئة جديدة!</div>'
+    return
+  }
+  list.innerHTML=allCategories.map(cat=>{
+    const count=allProducts.filter(p=>p.type===cat.name).length
+    return `<div class="card" style="display:flex;align-items:center;gap:14px;border-right:4px solid #a8160c">
+      <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#5a0902,#a8160c);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:900;font-size:18px;color:#f4b528">
+        ${esc(cat.name).charAt(0)}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:15px;font-weight:800;color:#1a0e08">${esc(cat.name)}</div>
+        <div style="font-size:12px;color:#9a8674;margin-top:2px">ترتيب: ${cat.sort_order} · ${count} صنف</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button class="btn-secondary btn-sm" onclick="openCategoryModal(${cat.id})">تعديل</button>
+        <button class="btn-danger btn-sm" onclick="deleteCategoryItem(${cat.id})">حذف</button>
+      </div>
+    </div>`
+  }).join('')
 }
 
-function filterItems(){
-  const q    =(document.getElementById('it-search')||{}).value||''
-  const cat  =(document.getElementById('it-cat')||{}).value||''
-  const avail=(document.getElementById('it-avail')||{}).value||''
-  const filtered=allProducts.filter(p=>{
-    if(q   && !p.name.includes(q)) return false
-    if(cat && (p.type||'بدون فئة')!==cat) return false
-    if(avail==='1' && !p.available) return false
-    if(avail==='0' &&  p.available) return false
-    return true
-  })
-  const isSA=session?.role==='super_admin'
-  const tbl=document.getElementById('items-table')
-  if(!tbl) return
-  if(!filtered.length){tbl.innerHTML='<div id="loading" style="padding:20px">لا توجد أصناف مطابقة.</div>';return}
-  tbl.innerHTML=`<div style="background:#fff;border:1px solid #ead8bf;border-radius:14px;overflow:hidden">
-    <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead>
-        <tr style="background:#f5ece0;border-bottom:2px solid #ead8bf">
-          <th style="padding:10px 14px;text-align:right;font-weight:800;color:#5b4636">الصنف</th>
-          <th style="padding:10px 14px;text-align:right;font-weight:800;color:#5b4636">الفئة</th>
-          <th style="padding:10px 14px;text-align:right;font-weight:800;color:#5b4636">السعر</th>
-          <th style="padding:10px 14px;text-align:center;font-weight:800;color:#5b4636">الحالة</th>
-          <th style="padding:10px 14px;text-align:center;font-weight:800;color:#5b4636">إجراءات</th>
-        </tr>
-      </thead>
-      <tbody>${filtered.map((p,i)=>{
-        const disc=p.discounted_price&&Number(p.discounted_price)<Number(p.original_price)
-        const priceHtml=disc
-          ?`<span style="font-weight:800;color:#a8160c">${Number(p.discounted_price).toLocaleString('ar-EG')} ج.م</span> <span style="font-size:11px;color:#9a8674;text-decoration:line-through">${Number(p.original_price).toLocaleString('ar-EG')}</span>`
-          :`<span style="font-weight:800;color:#a8160c">${Number(p.original_price).toLocaleString('ar-EG')} ج.م</span>`
-        const imgHtml=p.image_url
-          ?`<img src="${esc(p.image_url)}" style="width:38px;height:38px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">`
-          :`<div style="width:38px;height:38px;border-radius:8px;background:#f5ece0;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🥞</div>`
-        return `<tr style="border-bottom:1px solid #ead8bf;${i%2===0?'background:#fff':'background:#fafafa'}">
-          <td style="padding:10px 14px">
-            <div style="display:flex;align-items:center;gap:10px">
-              ${imgHtml}
-              <div>
-                <div style="font-weight:700;color:#1a0e08">${esc(p.name)}</div>
-                ${p.description?`<div style="font-size:11px;color:#9a8674;margin-top:1px">${esc(p.description).substring(0,40)}${p.description.length>40?'…':''}</div>`:''}
-              </div>
-            </div>
-          </td>
-          <td style="padding:10px 14px">
-            ${p.type?`<span style="background:#fde6a8;color:#7a0d05;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700">${esc(p.type)}</span>`:'<span style="color:#9a8674;font-size:12px">—</span>'}
-          </td>
-          <td style="padding:10px 14px">${priceHtml}</td>
-          <td style="padding:10px 14px;text-align:center">
-            <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;background:${p.available?'#e6f4ec':'#fee2e2'};color:${p.available?'#1f7a3f':'#991b1b'}">
-              ${p.available?'✓ متاح':'✕ مخفي'}
-            </span>
-          </td>
-          <td style="padding:10px 14px;text-align:center">
-            <div style="display:flex;gap:6px;justify-content:center">
-              <button class="btn-secondary btn-sm" onclick="openProductModal(${p.id})">✏️ تعديل</button>
-              ${isSA?`<button class="btn-danger btn-sm" onclick="deleteItemAndRefresh(${p.id})">🗑</button>`:''}
-            </div>
-          </td>
-        </tr>`
-      }).join('')}</tbody>
-    </table>
-  </div>
-  <div style="text-align:left;font-size:12px;color:#9a8674;margin-top:8px">${filtered.length} صنف</div>`
+function openCategoryModal(id){
+  const cat=id?allCategories.find(c=>c.id===id):null
+  document.getElementById('cf-id').value=cat?cat.id:''
+  document.getElementById('cf-name').value=cat?cat.name:''
+  document.getElementById('cf-order').value=cat?cat.sort_order:0
+  document.getElementById('m-category').style.display='flex'
+  document.getElementById('cf-name').focus()
 }
 
-async function deleteItemAndRefresh(id){
-  if(!confirm('هتمسح الصنف ده؟')) return
-  await api('/api/products/'+id,{method:'DELETE'})
-  await loadItems()
-  // re-apply filters after reload
-  filterItems()
+async function saveCategory(e){
+  e.preventDefault()
+  const id=document.getElementById('cf-id').value
+  const body={name:document.getElementById('cf-name').value.trim(),sortOrder:Number(document.getElementById('cf-order').value)||0}
+  if(!body.name) return
+  await api(id?`/api/categories/${id}`:'/api/categories',{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+  document.getElementById('m-category').style.display='none'
+  await loadCategoriesData()
+  renderCategories()
+}
+
+async function deleteCategoryItem(id){
+  if(!confirm('هتمسح الفئة دي؟ مش هتتمسح الأصناف اللي فيها.')) return
+  await api('/api/categories/'+id,{method:'DELETE'})
+  await loadCategoriesData()
+  renderCategories()
 }
 
 // ─── Branches ───────────────────────────────────���────────
@@ -1070,7 +1042,7 @@ async function boot(){
   if(!ok){document.getElementById('login-screen').classList.add('show');return}
   document.getElementById('login-screen').classList.remove('show')
   applySession()
-  await loadBranches()
+  await Promise.all([loadBranches(), loadCategoriesData()])
   if(session?.role==='super_admin') await loadAdmins()
   show('orders')
   setInterval(()=>{ if(currentTab==='orders') loadOrders(false) },15000)

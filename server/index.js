@@ -13,6 +13,7 @@ import {
   getBranches, getBranchById, createBranch, updateBranch, deleteBranch,
   getAdminByEmail, getAdminById, getAdminUsers, createAdminUser,
   deleteAdminUser, updateAdminPassword,
+  getCategories, createCategory, updateCategory, deleteCategory,
 } from './db.js'
 
 const __dirname  = dirname(fileURLToPath(import.meta.url))
@@ -590,6 +591,36 @@ app.put('/api/products/:id', adminAuth, branchScope, async (req, res) => {
 
 app.delete('/api/products/:id', adminAuth, superAdminOnly, async (req, res) => {
   await deleteProduct(Number(req.params.id))
+  res.json({ ok: true })
+})
+
+// ─── Categories ──────────────────────────────────────────
+
+app.get('/api/categories', async (req, res) => {
+  res.json(await getCategories())
+})
+
+app.post('/api/categories', adminAuth, superAdminOnly, async (req, res) => {
+  const { name, sortOrder } = req.body || {}
+  if (!name?.trim()) return res.status(400).json({ error: 'اسم الفئة مطلوب' })
+  try {
+    res.status(201).json(await createCategory({ name, sortOrder: Number(sortOrder) || 0 }))
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'الفئة موجودة بالفعل' })
+    console.error(err); res.status(500).json({ error: 'خطأ في الخادم' })
+  }
+})
+
+app.put('/api/categories/:id', adminAuth, superAdminOnly, async (req, res) => {
+  const { name, sortOrder } = req.body || {}
+  if (!name?.trim()) return res.status(400).json({ error: 'اسم الفئة مطلوب' })
+  const cat = await updateCategory(Number(req.params.id), { name, sortOrder: Number(sortOrder) || 0 })
+  if (!cat) return res.status(404).json({ error: 'الفئة مش موجودة' })
+  res.json(cat)
+})
+
+app.delete('/api/categories/:id', adminAuth, superAdminOnly, async (req, res) => {
+  await deleteCategory(Number(req.params.id))
   res.json({ ok: true })
 })
 

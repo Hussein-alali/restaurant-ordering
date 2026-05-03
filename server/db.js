@@ -80,6 +80,13 @@ await pool.query(`
     branch_id     INTEGER REFERENCES branches(id) ON DELETE SET NULL,
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS categories (
+    id         SERIAL PRIMARY KEY,
+    name       TEXT NOT NULL UNIQUE,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
 `)
 
 // ─── Migrations (idempotent upgrades) ─────────────────────
@@ -388,6 +395,33 @@ export async function deleteAdminUser(id) {
 export async function updateAdminPassword(id, password) {
   const hash = await bcrypt.hash(password, 12)
   await pool.query('UPDATE admin_users SET password_hash=$1 WHERE id=$2', [hash, id])
+}
+
+// ─── Categories ───────────────────────────────────────────
+
+export async function getCategories() {
+  const { rows } = await pool.query('SELECT * FROM categories ORDER BY sort_order ASC, name ASC')
+  return rows
+}
+
+export async function createCategory({ name, sortOrder = 0 }) {
+  const { rows } = await pool.query(
+    'INSERT INTO categories (name, sort_order) VALUES ($1, $2) RETURNING *',
+    [name.trim(), sortOrder],
+  )
+  return rows[0]
+}
+
+export async function updateCategory(id, { name, sortOrder = 0 }) {
+  const { rows } = await pool.query(
+    'UPDATE categories SET name=$1, sort_order=$2 WHERE id=$3 RETURNING *',
+    [name.trim(), sortOrder, id],
+  )
+  return rows[0] || null
+}
+
+export async function deleteCategory(id) {
+  await pool.query('DELETE FROM categories WHERE id=$1', [id])
 }
 
 export default pool

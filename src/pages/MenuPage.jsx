@@ -87,6 +87,11 @@ function MenuRow({ item, onAdd, onOpen }) {
         <div style={{ ...ar, fontSize: 15, fontWeight: 800, color: C.ink, lineHeight: 1.25 }}>
           {item.name}
         </div>
+        {item.description && (
+          <div style={{ fontSize: 12, color: C.body, marginTop: 3, lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+            {item.description}
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
           <div style={{ ...disp, fontSize: 17, fontWeight: 800, color: C.red, fontStyle: 'italic' }}>
             {egp(item.price)}
@@ -195,6 +200,7 @@ function MenuPage() {
   const { state, dispatch } = useCart()
   const [activeCat, setActiveCat] = useState(CATS[0].id)
   const [unavailable, setUnavailable] = useState(new Set())
+  const [descMap, setDescMap] = useState({})
   const navigate = useNavigate()
   const branch = state.selectedBranch
 
@@ -214,13 +220,16 @@ function MenuPage() {
         ...[...allDbNames].filter(n => !branchAvailableNames.has(n) && !globallyUnavailable.has(n)),
       ])
       setUnavailable(hidden)
+      const dm = {}
+      allProducts.forEach(p => { if (p.description) dm[p.name] = p.description })
+      setDescMap(dm)
     }).catch(() => {})
   }, [branch?.id])
 
   const cartCount = state.items.reduce((s, i) => s + i.quantity, 0)
   const total = calculateTotal(state.items)
   const isAdditions = activeCat === 'additions'
-  const items = isAdditions ? [] : menuData.filter(m => m.cat === activeCat && !unavailable.has(m.name))
+  const items = isAdditions ? [] : menuData.filter(m => m.cat === activeCat && !unavailable.has(m.name)).map(m => ({ ...m, description: descMap[m.name] || null }))
   const cat = CATS.find(c => c.id === activeCat)
 
   const serviceOptions = [
