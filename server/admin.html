@@ -86,6 +86,15 @@ select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,
 .btn-reset{background:#f4b528;color:#1a0e08;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
 .btn-sm{padding:5px 10px!important;font-size:11px!important}
 
+/* ── Toggle Switch ── */
+.toggle{position:relative;display:inline-block;width:42px;height:23px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;background:#ead8bf;border-radius:23px;transition:.25s;cursor:pointer}
+.toggle-track:before{content:'';position:absolute;width:17px;height:17px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.25s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle input:checked+.toggle-track{background:#a8160c}
+.toggle input:checked+.toggle-track:before{transform:translateX(19px)}
+.toggle-wrap{display:flex;align-items:center;gap:8px}
+
 /* ── Modal ── */
 .backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;justify-content:center;align-items:flex-start;padding:36px 14px;overflow-y:auto}
 .backdrop.open{display:flex}
@@ -165,7 +174,7 @@ select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,
     <div id="lerr" class="login-err"></div>
     <div class="fg2">
       <label>البريد الإلكتروني</label>
-      <input type="email" id="li-email" placeholder="admin@crepecorner.com" autocomplete="username">
+      <input type="email" id="li-email" placeholder="البريد الإلكتروني" autocomplete="username">
     </div>
     <div class="fg2">
       <label>كلمة المرور</label>
@@ -193,6 +202,7 @@ select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,
   <button data-tab="customers"               onclick="show('customers')">👤 العملاء</button>
   <button data-tab="products"                onclick="show('products')">🥞 المنتجات</button>
   <button data-tab="branches"  id="tab-branches"    style="display:none" onclick="show('branches')">🏪 الفروع</button>
+  <button data-tab="sections"                        onclick="show('sections')">📂 الأقسام</button>
   <button data-tab="admins"    id="tab-admins"      style="display:none" onclick="show('admins')">🔑 المشرفون</button>
   <button data-tab="settings"  id="tab-settings"   style="display:none" onclick="show('settings')">⚙️ الإعدادات</button>
   <button class="btn-excel" onclick="exportExcel()">📊 Excel</button>
@@ -326,6 +336,23 @@ select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,
   </div>
 </div>
 
+<!-- Section -->
+<div class="backdrop" id="m-section" onclick="if(event.target===this)closeModal('m-section')">
+  <div class="modal" style="max-width:440px">
+    <div class="mhead"><h3 id="m-sec-title">قسم جديد</h3><button class="close-x" onclick="closeModal('m-section')">✕</button></div>
+    <form id="secform" onsubmit="saveSectionItem(event)">
+      <input type="hidden" id="sf-id">
+      <div class="fg2"><label>اسم القسم *</label><input type="text" id="sf-name" required placeholder="مثال: كريب فراخ"></div>
+      <div class="fg2"><label>وصف <span style="font-size:11px;color:#9a8674;font-weight:400">— اختياري</span></label><input type="text" id="sf-desc" placeholder="وصف مختصر للقسم"></div>
+      <div id="sf-err" style="color:#a8160c;font-size:12px;font-weight:700;min-height:18px"></div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button type="submit" class="btn-primary" style="flex:1">إضافة القسم</button>
+        <button type="button" class="btn-secondary" onclick="closeModal('m-section')">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Change Password -->
 <div class="backdrop" id="m-chpw" onclick="if(event.target===this)closeModal('m-chpw')">
   <div class="modal" style="max-width:400px">
@@ -345,9 +372,10 @@ select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,
 
 <script>
 // ─── State ───────────────────────────────────────────────
+const arN = n => Number(n).toLocaleString('ar-EG')
 const STA = {pending:'قيد الانتظار',preparing:'جاري التحضير',on_the_way:'في الطريق',delivered:'تم التوصيل',cancelled:'ملغي'}
 const STAV = Object.keys(STA)
-let allOrders=[], allProducts=[], allBranches=[], allAdmins=[], allCategories=[], siteSettings={}
+let allOrders=[], allProducts=[], allBranches=[], allAdmins=[], allCategories=[], allSections=[], siteSettings={}
 let allCustomers=[]
 let currentTab='orders', session=null, pendingImg=''
 
@@ -383,7 +411,7 @@ async function doLogin(){
     session={...d}
     applySession()
     document.getElementById('login-screen').classList.remove('show')
-    await Promise.all([loadBranches(), loadCategoriesData(), loadSiteSettings()])
+    await Promise.all([loadBranches(), loadCategoriesData(), loadSiteSettings(), loadSections()])
     if(session.role==='super_admin') await loadAdmins()
     show('orders')
   }catch{document.getElementById('lerr').textContent='خطأ في الاتصال'}
@@ -440,6 +468,7 @@ function show(tab){
   else if(tab==='products')   loadProducts()
   else if(tab==='branches')   renderBranches()
   else if(tab==='categories') renderCategories()
+  else if(tab==='sections')   renderSections()
   else if(tab==='admins')     renderAdmins()
   else if(tab==='settings')   renderSettings()
 }
@@ -492,9 +521,9 @@ function applyFilters(){
   const tot=filtered.reduce((s,o)=>s+Number(o.total),0)
   const sb=document.getElementById('sum-bar')
   if(sb) sb.innerHTML=`<div class="summary">
-    <div class="si"><div class="val">${filtered.length}</div><div class="lbl">طلب</div></div>
+    <div class="si"><div class="val">${arN(filtered.length)}</div><div class="lbl">طلب</div></div>
     <div style="width:1px;background:rgba(255,255,255,.3);height:36px"></div>
-    <div class="si"><div class="val">${tot.toLocaleString('ar-EG')} ج.م</div><div class="lbl">إجمالي المبيعات</div></div>
+    <div class="si"><div class="val">${arN(tot)} ج.م</div><div class="lbl">إجمالي المبيعات</div></div>
   </div>`
   const ol=document.getElementById('orders-list'); if(!ol) return
   if(!filtered.length){ol.innerHTML='<div id="loading">لا توجد طلبات</div>';return}
@@ -510,12 +539,12 @@ function applyFilters(){
           </div>
           <div class="meta">${esc(o.phone)} · ${esc(o.service_type)} · ${esc(o.payment_method)}${o.branch_name?' · 🏪 '+esc(o.branch_name):''}</div>
           ${o.address?`<div class="meta">📍 ${esc(o.address)}</div>`:''}
-          <div class="meta" style="margin-top:5px;line-height:1.6">${items.map(i=>`<span style="background:#f5ece0;border-radius:5px;padding:1px 7px;margin-left:4px;display:inline-block">${esc(i.name)} ×${i.quantity}</span>`).join('')}</div>
+          <div class="meta" style="margin-top:5px;line-height:1.6">${items.map(i=>`<span style="background:#f5ece0;border-radius:5px;padding:1px 7px;margin-left:4px;display:inline-block">${esc(i.name)} ×${arN(i.quantity)}</span>`).join('')}</div>
           ${o.order_note?`<div class="meta" style="color:#1a0e08;font-weight:700;margin-top:3px">🗒 ${esc(o.order_note)}</div>`:''}
           ${o.delivery_notes?`<div class="meta" style="font-style:italic;margin-top:2px">📝 ${esc(o.delivery_notes)}</div>`:''}
         </div>
         <div style="text-align:left;flex-shrink:0">
-          <div class="price">${o.total} ج.م</div>
+          <div class="price">${arN(o.total)} ج.م</div>
           <div class="meta">${new Date(o.created_at).toLocaleString('ar-EG')}</div>
         </div>
       </div>
@@ -572,7 +601,7 @@ async function applyCustomerFilters(){
   allCustomers=data
   const sum=document.getElementById('c-summary')
   if(sum) sum.innerHTML=`<div class="summary" style="margin-bottom:12px">
-    <div class="si"><div class="val">${data.length}</div><div class="lbl">عميل</div></div>
+    <div class="si"><div class="val">${arN(data.length)}</div><div class="lbl">عميل</div></div>
   </div>`
   if(!data.length){if(list) list.innerHTML='<div id="loading">لا يوجد عملاء بهذه الفلترة</div>';return}
   if(list) list.innerHTML=data.map(c=>`<div class="card card-click" onclick="openCustomer(${c.id})">
@@ -607,16 +636,16 @@ async function openCustomer(id){
   document.getElementById('m-customer-body').innerHTML=
     `${d.address?`<div class="meta" style="margin-bottom:10px">📍 ${esc(d.address)}</div>`:''}
     <div style="display:flex;gap:20px;margin-bottom:14px">
-      <div><div style="font-size:20px;font-weight:900;color:#a8160c">${d.orders.length}</div><div class="meta">طلب</div></div>
-      <div><div style="font-size:20px;font-weight:900;color:#a8160c">${spent.toLocaleString('ar-EG')} ج.م</div><div class="meta">إجمالي</div></div>
+      <div><div style="font-size:20px;font-weight:900;color:#a8160c">${arN(d.orders.length)}</div><div class="meta">طلب</div></div>
+      <div><div style="font-size:20px;font-weight:900;color:#a8160c">${arN(spent)} ج.م</div><div class="meta">إجمالي</div></div>
     </div><hr style="border:none;border-top:1px solid #ead8bf;margin-bottom:12px">
     ${!d.orders.length?'<div class="meta">لا توجد طلبات</div>':
       d.orders.map(o=>{
         const items=Array.isArray(o.items)?o.items:JSON.parse(o.items)
         return `<div style="border:1px solid #ead8bf;border-radius:9px;padding:10px;margin-bottom:8px">
-          <div style="display:flex;justify-content:space-between"><span style="font-weight:700">#${o.order_number}</span><span style="font-weight:800;color:#a8160c">${o.total} ج.م</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="font-weight:700">#${o.order_number}</span><span style="font-weight:800;color:#a8160c">${arN(o.total)} ج.م</span></div>
           <div class="meta">${new Date(o.created_at).toLocaleString('ar-EG')}</div>
-          <div class="meta">${items.map(i=>esc(i.name)+' ×'+i.quantity).join(' · ')}</div>
+          <div class="meta">${items.map(i=>esc(i.name)+' ×'+arN(i.quantity)).join(' · ')}</div>
           <div style="margin-top:5px"><span class="badge ${o.status}">${STA[o.status]||o.status}</span></div>
         </div>`
       }).join('')}`
@@ -634,10 +663,10 @@ async function loadProducts(){
 function renderProducts(){
   const isSA=session?.role==='super_admin'
   const header=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-    <h2 style="margin:0">المنتجات (${allProducts.length})</h2>
+    <h2 style="margin:0">المنتجات (${arN(allProducts.length)})</h2>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       ${isSA&&!allProducts.length?`<button class="btn-warn" onclick="seedProducts()">📥 استيراد القائمة</button>`:''}
-      ${isSA?`<button class="btn-secondary" onclick="show('categories')" style="font-size:13px">🗂 الفئات</button>`:''}
+      ${isSA?`<button class="btn-secondary" onclick="openSectionModal(null)" style="font-size:13px">+ قسم جديد</button>`:''}
       <button class="btn-primary" onclick="openProductModal(null)">+ منتج جديد</button>
     </div></div>`
   if(!allProducts.length){
@@ -648,7 +677,7 @@ function renderProducts(){
   document.getElementById('main').innerHTML=header+Object.entries(groups).map(([type,items])=>
     `<div style="margin-bottom:6px">
       <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;background:#fff;border:1px solid #ead8bf;border-radius:12px;padding:11px 15px;margin-bottom:7px" onclick="toggleSec(this)">
-        <div style="font-weight:800;font-size:14px;color:#5b4636">${esc(type)} <span style="font-size:12px;color:#9a8674">(${items.length})</span></div>
+        <div style="font-weight:800;font-size:14px;color:#5b4636">${esc(type)} <span style="font-size:12px;color:#9a8674">(${arN(items.length)})</span></div>
         <span style="font-size:18px;color:#a8160c;transition:transform .2s" class="sarrow">▾</span>
       </div>
       <div class="sbody">${items.map(p=>pCardHtml(p)).join('')}</div>
@@ -677,8 +706,8 @@ function pCardHtml(p){
       ${p.description?`<div class="meta" style="margin-top:2px">${esc(p.description)}</div>`:''}
       <div style="display:flex;gap:12px;margin-top:5px;align-items:baseline">
         ${disc
-          ?`<span style="font-size:15px;font-weight:900;color:#a8160c">${Number(p.discounted_price).toLocaleString('ar-EG')} ج.م</span><span style="font-size:11px;color:#9a8674;text-decoration:line-through">${Number(p.original_price).toLocaleString('ar-EG')}</span>`
-          :`<span style="font-size:15px;font-weight:900;color:#a8160c">${Number(p.original_price).toLocaleString('ar-EG')} ج.م</span>`}
+          ?`<span style="font-size:15px;font-weight:900;color:#a8160c">${arN(p.discounted_price)} ج.م</span><span style="font-size:11px;color:#9a8674;text-decoration:line-through">${arN(p.original_price)}</span>`
+          :`<span style="font-size:15px;font-weight:900;color:#a8160c">${arN(p.original_price)} ج.م</span>`}
       </div>
       <div style="display:flex;gap:6px;margin-top:7px">
         <button class="btn-secondary btn-sm" onclick="openProductModal(${p.id})">✏️ تعديل</button>
@@ -700,7 +729,10 @@ async function openProductModal(id){
   document.getElementById('pf-avail').checked  =p?Boolean(p.available):true
   // Populate category select from loaded categories
   const typeEl=document.getElementById('pf-type')
-  typeEl.innerHTML='<option value="">— بدون فئة —</option>'+allCategories.map(c=>`<option value="${esc(c.name)}"${p?.type===c.name?' selected':''}>${esc(c.name)}</option>`).join('')
+  const sectionsForType = session?.role==='branch_admin'
+    ? allSections.filter(s=>{const av=(s.branch_availability||{})[session.branchId]; return av===undefined?true:av})
+    : allSections
+  typeEl.innerHTML='<option value="">— بدون قسم —</option>'+sectionsForType.map(s=>`<option value="${esc(s.name)}"${p?.type===s.name?' selected':''}>${esc(s.name)}</option>`).join('')
   document.getElementById('psubmit').textContent=p?'حفظ التغييرات':'إضافة المنتج'
   pendingImg=''
   const urlVal=p?p.image_url||'':''
@@ -787,7 +819,7 @@ function renderCategories(){
   const main=document.getElementById('main')
   main.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-      <h2 style="margin:0;font-size:18px;font-weight:800;color:#1a0e08">الفئات (${allCategories.length})</h2>
+      <h2 style="margin:0;font-size:18px;font-weight:800;color:#1a0e08">الفئات (${arN(allCategories.length)})</h2>
       <button class="btn-primary" onclick="openCategoryModal(null)">+ فئة جديدة</button>
     </div>
     <div id="cats-list"></div>`
@@ -804,7 +836,7 @@ function renderCategories(){
       </div>
       <div style="flex:1;min-width:0">
         <div style="font-size:15px;font-weight:800;color:#1a0e08">${esc(cat.name)}</div>
-        <div style="font-size:12px;color:#9a8674;margin-top:2px">ترتيب: ${cat.sort_order} · ${count} صنف</div>
+        <div style="font-size:12px;color:#9a8674;margin-top:2px">ترتيب: ${arN(cat.sort_order)} · ${arN(count)} صنف</div>
       </div>
       <div style="display:flex;gap:8px;flex-shrink:0">
         <button class="btn-secondary btn-sm" onclick="openCategoryModal(${cat.id})">تعديل</button>
@@ -819,7 +851,7 @@ function openCategoryModal(id){
   document.getElementById('cf-id').value=cat?cat.id:''
   document.getElementById('cf-name').value=cat?cat.name:''
   document.getElementById('cf-order').value=cat?cat.sort_order:0
-  document.getElementById('m-category').style.display='flex'
+  document.getElementById('m-category').classList.add('open')
   document.getElementById('cf-name').focus()
 }
 
@@ -829,7 +861,7 @@ async function saveCategory(e){
   const body={name:document.getElementById('cf-name').value.trim(),sortOrder:Number(document.getElementById('cf-order').value)||0}
   if(!body.name) return
   await api(id?`/api/categories/${id}`:'/api/categories',{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-  document.getElementById('m-category').style.display='none'
+  closeModal('m-category')
   await loadCategoriesData()
   renderCategories()
 }
@@ -839,6 +871,132 @@ async function deleteCategoryItem(id){
   await api('/api/categories/'+id,{method:'DELETE'})
   await loadCategoriesData()
   renderCategories()
+}
+
+// ─── Sections Tab ────────────────────────────────────────
+
+async function loadSections(){
+  try{ allSections=await fetch('/api/sections').then(r=>r.ok?r.json():[]) }catch{ allSections=[] }
+}
+
+function renderSections(){
+  const isSA=session?.role==='super_admin'
+  document.getElementById('main').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <h2 style="margin:0;font-size:18px;font-weight:800;color:#1a0e08">الأقسام (${arN(allSections.length)})</h2>
+      ${isSA?`<button class="btn-primary" onclick="openSectionModal(null)">+ قسم جديد</button>`:''}
+    </div>
+    <div id="secs-list"></div>`
+  renderSectionsList()
+}
+
+function renderSectionsList(){
+  const isSA=session?.role==='super_admin'
+  const list=document.getElementById('secs-list')
+  if(!list) return
+  if(!allSections.length){
+    list.innerHTML='<div style="text-align:center;padding:48px 0;color:#9a8674;font-size:14px">لا توجد أقسام. أضف قسم جديد من تبويب المنتجات!</div>'
+    return
+  }
+  list.innerHTML=allSections.map(sec=>{
+    const prodCount=allProducts.filter(p=>p.type===sec.name).length
+    let togglesHtml=''
+    if(isSA){
+      togglesHtml=allBranches.map(b=>{
+        const av=(sec.branch_availability||{})[b.id]
+        const checked=av===undefined?true:av
+        return `<div class="toggle-wrap" style="margin-top:7px">
+          <label class="toggle">
+            <input type="checkbox" ${checked?'checked':''} onchange="toggleBranchSection(${sec.id},${b.id},this.checked)">
+            <span class="toggle-track"></span>
+          </label>
+          <span style="font-size:12px;color:#5b4636">${esc(b.name)}</span>
+        </div>`
+      }).join('')
+    } else {
+      const branchId=session?.branchId
+      const av=(sec.branch_availability||{})[branchId]
+      const checked=av===undefined?true:av
+      togglesHtml=`<div class="toggle-wrap" style="margin-top:10px">
+        <label class="toggle">
+          <input type="checkbox" ${checked?'checked':''} onchange="toggleBranchSection(${sec.id},${branchId},this.checked)">
+          <span class="toggle-track"></span>
+        </label>
+        <span style="font-size:13px;font-weight:700;color:#5b4636">متاح في هذا الفرع</span>
+      </div>`
+    }
+    return `<div class="card" style="border-right:4px solid #a8160c">
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#5a0902,#a8160c);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:900;font-size:20px;color:#f4b528">
+          ${esc(sec.name).charAt(0)}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:15px;font-weight:800;color:#1a0e08">${esc(sec.name)}</div>
+          ${sec.description?`<div style="font-size:12px;color:#9a8674;margin-top:2px">${esc(sec.description)}</div>`:''}
+          <div style="font-size:12px;color:#9a8674;margin-top:2px">${arN(prodCount)} منتج</div>
+          ${togglesHtml}
+        </div>
+        ${isSA?`<div style="display:flex;gap:8px;flex-shrink:0;margin-top:2px">
+          <button class="btn-secondary btn-sm" onclick="openSectionModal(${sec.id})">تعديل</button>
+          <button class="btn-danger btn-sm" onclick="deleteSectionItem(${sec.id})">حذف</button>
+        </div>`:''}
+      </div>
+    </div>`
+  }).join('')
+}
+
+function openSectionModal(id){
+  const sec=id?allSections.find(s=>s.id===id):null
+  document.getElementById('sf-id').value=sec?sec.id:''
+  document.getElementById('sf-name').value=sec?sec.name:''
+  document.getElementById('sf-desc').value=sec?sec.description||'':''
+  document.getElementById('sf-err').textContent=''
+  document.getElementById('m-sec-title').textContent=sec?'تعديل القسم':'قسم جديد'
+  document.getElementById('secform').querySelector('[type=submit]').textContent=sec?'حفظ التعديل':'إضافة القسم'
+  document.getElementById('m-section').classList.add('open')
+  document.getElementById('sf-name').focus()
+}
+
+async function saveSectionItem(e){
+  e.preventDefault()
+  const id=document.getElementById('sf-id').value
+  const name=document.getElementById('sf-name').value.trim()
+  const description=document.getElementById('sf-desc').value.trim()
+  if(!name){document.getElementById('sf-err').textContent='اسم القسم مطلوب';return}
+  const r=await api(id?`/api/sections/${id}`:'/api/sections',{
+    method:id?'PUT':'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name,description}),
+  })
+  if(!r.ok){
+    const d=await r.json().catch(()=>({}))
+    document.getElementById('sf-err').textContent=d.error||'حصل خطأ'
+    return
+  }
+  closeModal('m-section')
+  await loadSections()
+  if(currentTab==='sections') renderSections()
+}
+
+async function deleteSectionItem(id){
+  if(!confirm('هتمسح القسم ده؟ الأصناف المرتبطة بيه مش هتتمسح.')) return
+  await api('/api/sections/'+id,{method:'DELETE'})
+  await loadSections()
+  renderSections()
+}
+
+async function toggleBranchSection(sectionId, branchId, isAvailable){
+  await api('/api/branch-sections',{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({branch_id:branchId,section_id:sectionId,is_available:isAvailable}),
+  })
+  // update local state without re-fetching
+  const sec=allSections.find(s=>s.id===sectionId)
+  if(sec){
+    if(!sec.branch_availability) sec.branch_availability={}
+    sec.branch_availability[branchId]=isAvailable
+  }
 }
 
 // ─── Site Settings Tab ───────────────────────────────────
@@ -893,7 +1051,7 @@ async function loadBranches(){
 
 function renderBranches(){
   const header=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-    <h2 style="margin:0">الفروع (${allBranches.length})</h2>
+    <h2 style="margin:0">الفروع (${arN(allBranches.length)})</h2>
     <button class="btn-primary" onclick="openBranchModal(null)">+ فرع جديد</button>
   </div>`
   if(!allBranches.length){
@@ -969,7 +1127,7 @@ async function loadAdmins(){
 
 function renderAdmins(){
   const header=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-    <h2 style="margin:0">المشرفون (${allAdmins.length})</h2>
+    <h2 style="margin:0">المشرفون (${arN(allAdmins.length)})</h2>
     <button class="btn-primary" onclick="openAdminModal()">+ مشرف جديد</button>
   </div>`
   document.getElementById('main').innerHTML=header+

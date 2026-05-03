@@ -92,6 +92,20 @@ await pool.query(`
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS sections (
+    id          SERIAL PRIMARY KEY,
+    name        TEXT NOT NULL UNIQUE,
+    description TEXT,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS branch_sections (
+    branch_id    INTEGER REFERENCES branches(id) ON DELETE CASCADE,
+    section_id   INTEGER REFERENCES sections(id) ON DELETE CASCADE,
+    is_available BOOLEAN NOT NULL DEFAULT true,
+    PRIMARY KEY (branch_id, section_id)
+  );
 `)
 
 // ─── Migrations (idempotent upgrades) ─────────────────────
@@ -317,6 +331,15 @@ export async function getProductsForBranch(branchId) {
       NOT EXISTS (SELECT 1 FROM product_branches pb WHERE pb.product_id=products.id)
       OR  EXISTS (SELECT 1 FROM product_branches pb WHERE pb.product_id=products.id AND pb.branch_id=$1)
     )
+    AND (
+      products.type IS NULL
+      OR NOT EXISTS (SELECT 1 FROM sections s WHERE s.name=products.type)
+      OR EXISTS (
+        SELECT 1 FROM sections s
+        JOIN branch_sections bs ON bs.section_id=s.id AND bs.branch_id=$1
+        WHERE s.name=products.type AND bs.is_available=true
+      )
+    )
     ORDER BY created_at ASC
   `, [branchId])
   return rows
@@ -400,6 +423,56 @@ export async function deleteAdminUser(id) {
 export async function updateAdminPassword(id, password) {
   const hash = await bcrypt.hash(password, 12)
   await pool.query('UPDATE admin_users SET password_hash=$1 WHERE id=$2', [hash, id])
+}
+
+// ─── Sections ────────────────────────────────���────────────
+
+export async function getSections() {
+  const { rows: secs } = await pool.query('SELECT * FROM sections ORDER BY name ASC')
+  if (!secs.length) return []
+  const { rows: avail } = await pool.query('SELECT branch_id, section_id, is_available FROM branch_sections')
+  return secs.map(s => ({
+    ...s,
+    branch_availability: Object.fromEntries(
+      avail.filter(a => a.section_id === s.id).map(a => [a.branch_id, a.is_available]),
+    ),
+  }))
+}
+
+export async function createSection({ name, description }) {
+  const { rows } = await pool.query(
+    'INSERT INTO sections (name, description) VALUES ($1, $2) RETURNING *',
+    [name.trim(), description || null],
+  )
+  const section = rows[0]
+  const { rows: branches } = await pool.query('SELECT id FROM branches')
+  for (const b of branches) {
+    await pool.query(
+      'INSERT INTO branch_sections (branch_id, section_id, is_available) VALUES ($1,$2,true) ON CONFLICT DO NOTHING',
+      [b.id, section.id],
+    )
+  }
+  return section
+}
+
+export async function updateSection(id, { name, description }) {
+  const { rows } = await pool.query(
+    'UPDATE sections SET name=$1, description=$2 WHERE id=$3 RETURNING *',
+    [name.trim(), description || null, id],
+  )
+  return rows[0] || null
+}
+
+export async function deleteSection(id) {
+  await pool.query('DELETE FROM sections WHERE id=$1', [id])
+}
+
+export async function updateBranchSection(branchId, sectionId, isAvailable) {
+  await pool.query(
+    `INSERT INTO branch_sections (branch_id, section_id, is_available) VALUES ($1,$2,$3)
+     ON CONFLICT (branch_id, section_id) DO UPDATE SET is_available=$3`,
+    [branchId, sectionId, isAvailable],
+  )
 }
 
 // ─── Site Settings ────────────────────────────────────────

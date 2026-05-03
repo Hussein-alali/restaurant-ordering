@@ -15,6 +15,7 @@ import {
   deleteAdminUser, updateAdminPassword,
   getCategories, createCategory, updateCategory, deleteCategory,
   getSettings, upsertSetting,
+  getSections, createSection, updateSection, deleteSection, updateBranchSection,
 } from './db.js'
 
 const __dirname  = dirname(fileURLToPath(import.meta.url))
@@ -622,6 +623,46 @@ app.put('/api/categories/:id', adminAuth, superAdminOnly, async (req, res) => {
 
 app.delete('/api/categories/:id', adminAuth, superAdminOnly, async (req, res) => {
   await deleteCategory(Number(req.params.id))
+  res.json({ ok: true })
+})
+
+// ─── Sections ────────────────────────────────────────────
+
+app.get('/api/sections', async (req, res) => {
+  res.json(await getSections())
+})
+
+app.post('/api/sections', adminAuth, superAdminOnly, async (req, res) => {
+  const { name, description } = req.body
+  if (!name?.trim()) return res.status(400).json({ error: 'name required' })
+  try {
+    res.status(201).json(await createSection({ name, description }))
+  } catch (e) {
+    if (e.code === '23505') return res.status(409).json({ error: 'اسم القسم موجود بالفعل' })
+    throw e
+  }
+})
+
+app.put('/api/sections/:id', adminAuth, superAdminOnly, async (req, res) => {
+  const { name, description } = req.body
+  if (!name?.trim()) return res.status(400).json({ error: 'name required' })
+  const sec = await updateSection(Number(req.params.id), { name, description })
+  if (!sec) return res.status(404).json({ error: 'not found' })
+  res.json(sec)
+})
+
+app.delete('/api/sections/:id', adminAuth, superAdminOnly, async (req, res) => {
+  await deleteSection(Number(req.params.id))
+  res.json({ ok: true })
+})
+
+app.patch('/api/branch-sections', adminAuth, async (req, res) => {
+  const { branch_id, section_id, is_available } = req.body
+  if (!branch_id || !section_id || typeof is_available !== 'boolean')
+    return res.status(400).json({ error: 'invalid body' })
+  if (req.admin.role === 'branch_admin' && req.admin.branch_id !== Number(branch_id))
+    return res.status(403).json({ error: 'forbidden' })
+  await updateBranchSection(Number(branch_id), Number(section_id), is_available)
   res.json({ ok: true })
 })
 
