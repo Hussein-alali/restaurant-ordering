@@ -203,7 +203,6 @@ select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,
   <button data-tab="products"                onclick="show('products')">🥞 المنتجات</button>
   <button data-tab="branches"  id="tab-branches"    style="display:none" onclick="show('branches')">🏪 الفروع</button>
   <button data-tab="sections"                        onclick="show('sections')">📂 الأقسام</button>
-  <button data-tab="offers"   id="tab-offers"        style="display:none" onclick="show('offers')">🎁 العروض</button>
   <button data-tab="admins"    id="tab-admins"      style="display:none" onclick="show('admins')">🔑 المشرفون</button>
   <button data-tab="settings"  id="tab-settings"   style="display:none" onclick="show('settings')">⚙️ الإعدادات</button>
   <button class="btn-excel" onclick="exportExcel()">📊 Excel</button>
@@ -476,7 +475,6 @@ function applySession(){
   document.getElementById('tab-branches').style.display   = isSA ? '' : 'none'
   document.getElementById('tab-admins').style.display     = isSA ? '' : 'none'
   document.getElementById('tab-settings').style.display   = isSA ? '' : 'none'
-  document.getElementById('tab-offers').style.display     = isSA ? '' : 'none'
   document.getElementById('pf-branches-wrap').style.display = isSA ? '' : 'none'
 }
 
