@@ -26,12 +26,21 @@ export default function BranchSelectorPage() {
   const navigate = useNavigate()
   const [branches, setBranches] = useState([])
   const [loading, setLoading]   = useState(true)
+  const [siteName, setSiteName] = useState('Crepe Corner')
+  const [tagline, setTagline]   = useState('اختار الفرع الأقرب ليك')
 
   useEffect(() => {
     fetch('/api/branches')
       .then(r => r.ok ? r.json() : [])
       .then(data => { setBranches(data); setLoading(false) })
       .catch(() => setLoading(false))
+    fetch('/api/settings')
+      .then(r => r.ok ? r.json() : {})
+      .then(s => {
+        if (s.restaurant_name) setSiteName(s.restaurant_name)
+        if (s.tagline) setTagline(s.tagline)
+      })
+      .catch(() => {})
   }, [])
 
   const selectBranch = (branch) => {
@@ -59,10 +68,10 @@ export default function BranchSelectorPage() {
           <img src={logoSrc} alt="Crepe Corner" style={{ width: 64, height: 64, borderRadius: 32, objectFit: 'cover', flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
             <div style={{ ...disp, color: C.yellow, fontWeight: 800, fontSize: 18, letterSpacing: -0.3, fontStyle: 'italic' }}>
-              Crepe Corner
+              {siteName}
             </div>
             <div style={{ color: '#fff', fontSize: 11, opacity: 0.85, marginTop: 2 }}>
-              اختار الفرع الأقرب ليك
+              {tagline}
             </div>
           </div>
         </div>

@@ -201,8 +201,15 @@ function MenuPage() {
   const [activeCat, setActiveCat] = useState(CATS[0].id)
   const [unavailable, setUnavailable] = useState(new Set())
   const [descMap, setDescMap] = useState({})
+  const [siteName, setSiteName] = useState('Crepe Corner')
   const navigate = useNavigate()
   const branch = state.selectedBranch
+
+  useEffect(() => {
+    fetch('/api/settings').then(r => r.ok ? r.json() : {}).then(s => {
+      if (s.restaurant_name) setSiteName(s.restaurant_name)
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (!branch) { navigate('/branch', { replace: true }); return }
@@ -258,7 +265,7 @@ function MenuPage() {
           <CCLogo size={64} />
           <div style={{ flex: 1 }}>
             <div style={{ ...disp, color: C.yellow, fontWeight: 800, fontSize: 18, letterSpacing: -0.3, fontStyle: 'italic' }}>
-              Crepe Corner
+              {siteName}
             </div>
             {branch ? (
               <div style={{ color: '#fff', fontSize: 11, opacity: 0.85, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -267,7 +274,7 @@ function MenuPage() {
                 {branch.address && <span>· {branch.address}</span>}
               </div>
             ) : (
-              <div style={{ color: '#fff', fontSize: 11, opacity: 0.85, marginTop: 2 }}>Crepe Corner</div>
+              <div style={{ color: '#fff', fontSize: 11, opacity: 0.85, marginTop: 2 }}>{siteName}</div>
             )}
           </div>
           {branch?.phone && <WhatsAppButton phone={branch.phone.replace(/^0/, '20')} />}

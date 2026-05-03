@@ -87,6 +87,11 @@ await pool.query(`
     sort_order INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS site_settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 `)
 
 // ─── Migrations (idempotent upgrades) ─────────────────────
@@ -395,6 +400,20 @@ export async function deleteAdminUser(id) {
 export async function updateAdminPassword(id, password) {
   const hash = await bcrypt.hash(password, 12)
   await pool.query('UPDATE admin_users SET password_hash=$1 WHERE id=$2', [hash, id])
+}
+
+// ─── Site Settings ────────────────────────────────────────
+
+export async function getSettings() {
+  const { rows } = await pool.query('SELECT key, value FROM site_settings')
+  return Object.fromEntries(rows.map(r => [r.key, r.value]))
+}
+
+export async function upsertSetting(key, value) {
+  await pool.query(
+    'INSERT INTO site_settings (key, value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value=$2',
+    [key, value],
+  )
 }
 
 // ─── Categories ───────────────────────────────────────────

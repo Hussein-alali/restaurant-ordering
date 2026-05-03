@@ -14,6 +14,7 @@ import {
   getAdminByEmail, getAdminById, getAdminUsers, createAdminUser,
   deleteAdminUser, updateAdminPassword,
   getCategories, createCategory, updateCategory, deleteCategory,
+  getSettings, upsertSetting,
 } from './db.js'
 
 const __dirname  = dirname(fileURLToPath(import.meta.url))
@@ -622,6 +623,19 @@ app.put('/api/categories/:id', adminAuth, superAdminOnly, async (req, res) => {
 app.delete('/api/categories/:id', adminAuth, superAdminOnly, async (req, res) => {
   await deleteCategory(Number(req.params.id))
   res.json({ ok: true })
+})
+
+// ─── Site Settings ───────────────────────────────────────
+
+app.get('/api/settings', async (req, res) => {
+  res.json(await getSettings())
+})
+
+app.put('/api/settings', adminAuth, superAdminOnly, async (req, res) => {
+  const allowed = ['restaurant_name', 'tagline']
+  const updates = Object.entries(req.body).filter(([k]) => allowed.includes(k))
+  for (const [k, v] of updates) await upsertSetting(k, String(v).trim().slice(0, 200))
+  res.json(await getSettings())
 })
 
 // ─── Admin UI ────────────────────────────────────────────
