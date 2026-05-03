@@ -42,10 +42,15 @@ main{padding:18px 20px}
 #loading{text-align:center;padding:48px;color:#9a8674}
 
 /* ── Cards ── */
-.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:10px;border:1px solid #ead8bf}
-.card-click{cursor:pointer;transition:box-shadow .15s}
-.card-click:hover{box-shadow:0 2px 12px rgba(168,22,12,.12)}
-.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
+.card{background:#fff;border-radius:14px;padding:14px 16px 12px;margin-bottom:10px;border:1px solid #ead8bf;border-right:4px solid #ead8bf;transition:box-shadow .2s,transform .15s}
+.card-click{cursor:pointer}
+.card-click:hover,.card:hover{box-shadow:0 6px 24px rgba(168,22,12,.11);transform:translateY(-1px)}
+.card.s-pending{border-right-color:#f4b528}
+.card.s-preparing{border-right-color:#3b82f6}
+.card.s-on_the_way{border-right-color:#10b981}
+.card.s-delivered{border-right-color:#1f7a3f}
+.card.s-cancelled{border-right-color:#9ca3af}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
 .badge.pending{background:#fde6a8;color:#7a0d05}
 .badge.preparing{background:#dbeafe;color:#1d4ed8}
 .badge.on_the_way{background:#dcfce7;color:#166534}
@@ -55,12 +60,19 @@ main{padding:18px 20px}
 .price{font-size:18px;font-weight:800;color:#a8160c}
 h2{font-size:15px;font-weight:800;margin-bottom:12px;color:#5b4636}
 
-/* ── Filters / Summary ── */
-.filters{background:#fff;border:1px solid #ead8bf;border-radius:12px;padding:12px 14px;margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
-.fg{display:flex;flex-direction:column;gap:4px}
+/* ── Filters / Calendar ── */
+.filters{background:#fff;border:1px solid #ead8bf;border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;box-shadow:0 2px 10px rgba(90,9,2,.06)}
+.fg{display:flex;flex-direction:column;gap:5px}
 .fg label{font-size:11px;color:#5b4636;font-weight:700}
-input[type=date],select{padding:6px 10px;border-radius:7px;border:1px solid #ead8bf;font-size:13px;background:#fff;font-family:inherit}
-.summary{background:#a8160c;color:#fff;border-radius:12px;padding:12px 18px;margin-bottom:12px;display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+/* Calendar date input wrapper */
+.cal-wrap{position:relative;display:inline-block}
+.cal-wrap::after{content:'';position:absolute;right:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a8160c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E") no-repeat center/contain;pointer-events:none;z-index:1}
+.cal-wrap input[type=date]{padding:7px 36px 7px 10px;border-radius:9px;border:1.5px solid #ead8bf;font-size:13px;background:#fafafa;font-family:inherit;color:#1a0e08;cursor:pointer;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+.cal-wrap input[type=date]::-webkit-calendar-picker-indicator{position:absolute;left:0;top:0;width:36px;height:100%;opacity:0;cursor:pointer}
+.cal-wrap input[type=date]:focus{border-color:#a8160c;background:#fff;outline:none;box-shadow:0 0 0 3px rgba(168,22,12,.1)}
+select{padding:7px 10px;border-radius:9px;border:1.5px solid #ead8bf;font-size:13px;background:#fafafa;font-family:inherit;color:#1a0e08;cursor:pointer;transition:border-color .2s,box-shadow .2s}
+select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,12,.1)}
+.summary{background:linear-gradient(135deg,#7a0d05 0%,#a8160c 100%);color:#fff;border-radius:14px;padding:14px 20px;margin-bottom:14px;display:flex;gap:24px;align-items:center;flex-wrap:wrap;box-shadow:0 4px 16px rgba(168,22,12,.25)}
 .si .val{font-size:22px;font-weight:900}
 .si .lbl{font-size:11px;opacity:.8;margin-top:2px}
 
@@ -100,8 +112,11 @@ input[type=date],select{padding:6px 10px;border-radius:7px;border:1px solid #ead
 .toggle input:checked+.tslider:before{transform:translateX(20px)}
 .section-divider{margin:18px 0 14px;font-size:12px;font-weight:800;color:#a8160c;border-bottom:1.5px solid #ead8bf;padding-bottom:6px}
 
+/* ── Customer avatar ── */
+.cust-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#7a0d05,#a8160c);display:flex;align-items:center;justify-content:center;color:#f4b528;font-size:17px;font-weight:900;flex-shrink:0}
+
 /* ── Product card ── */
-.pcard{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid #ead8bf;display:flex;gap:12px;align-items:flex-start}
+.pcard{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;border:1px solid #ead8bf;border-right:4px solid #ead8bf;display:flex;gap:12px;align-items:flex-start;transition:box-shadow .2s}.pcard:hover{box-shadow:0 4px 18px rgba(168,22,12,.1)}
 .pimg{width:68px;height:68px;border-radius:9px;object-fit:cover;flex-shrink:0}
 .pimg-ph{width:68px;height:68px;border-radius:9px;background:#f5ece0;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px}
 .avail-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:4px;vertical-align:middle}
@@ -117,17 +132,21 @@ input[type=date],select{padding:6px 10px;border-radius:7px;border:1px solid #ead
 .bcheck span{font-size:13px;font-weight:600}
 
 /* ── Branch card ── */
-.brcard{background:#fff;border:1px solid #ead8bf;border-radius:12px;padding:16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.brcard{background:#fff;border:1px solid #ead8bf;border-right:4px solid #a8160c;border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;transition:box-shadow .2s}
+.brcard:hover{box-shadow:0 4px 18px rgba(168,22,12,.1)}
 .brcard .bri .brn{font-size:15px;font-weight:800}
 .brcard .bri .brp{font-size:13px;color:#5b4636;margin-top:3px}
 .brcard .bri .bra{font-size:12px;color:#9a8674;margin-top:2px}
 .brcard .bract{display:flex;gap:6px;flex-shrink:0}
+.br-icon{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#5a0902,#a8160c);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
 
 /* ── Admin user card ── */
-.ucard{background:#fff;border:1px solid #ead8bf;border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:12px}
-.ucard .ui .un{font-size:14px;font-weight:800}
+.ucard{background:#fff;border:1px solid #ead8bf;border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:12px;transition:box-shadow .2s}
+.ucard:hover{box-shadow:0 4px 16px rgba(168,22,12,.08)}
+.ucard .ui .un{font-size:14px;font-weight:800;display:flex;align-items:center;gap:6px}
 .ucard .ui .ue{font-size:12px;color:#5b4636;margin-top:2px}
 .ucard .ui .ub{font-size:11px;color:#9a8674;margin-top:2px}
+.u-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .super-tag{background:#f4b528;color:#1a0e08;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:800}
 .branch-tag{background:#dbeafe;color:#1d4ed8;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700}
 
@@ -425,13 +444,13 @@ function renderOrderFilters(){
   const branchOpts = isSA ? allBranches.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('') : ''
   document.getElementById('main').innerHTML=
     `<div class="filters">
-      <div class="fg"><label>من تاريخ</label><input type="date" id="f-from" onchange="applyFilters()"></div>
-      <div class="fg"><label>إلى تاريخ</label><input type="date" id="f-to" onchange="applyFilters()"></div>
+      <div class="fg"><label>من تاريخ</label><div class="cal-wrap"><input type="date" id="f-from" onchange="applyFilters()"></div></div>
+      <div class="fg"><label>إلى تاريخ</label><div class="cal-wrap"><input type="date" id="f-to" onchange="applyFilters()"></div></div>
       <div class="fg"><label>الحالة</label>
         <select id="f-status" onchange="applyFilters()"><option value="">الكل</option>${STAV.map(s=>`<option value="${s}">${STA[s]}</option>`).join('')}</select>
       </div>
       ${branchOpts?`<div class="fg"><label>الفرع</label><select id="f-branch" onchange="applyFilters()"><option value="">الكل</option>${branchOpts}</select></div>`:''}
-      <button class="btn-reset" onclick="resetFilters()">مسح</button>
+      <button class="btn-reset" onclick="resetFilters()">↺ مسح</button>
     </div>
     <div id="sum-bar"></div><div id="orders-list"></div>`
 }
@@ -460,24 +479,28 @@ function applyFilters(){
   if(!filtered.length){ol.innerHTML='<div id="loading">لا توجد طلبات</div>';return}
   ol.innerHTML=filtered.map(o=>{
     const items=Array.isArray(o.items)?o.items:JSON.parse(o.items)
-    return `<div class="card">
+    return `<div class="card s-${o.status}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
-        <div>
-          <div style="font-weight:800;font-size:15px">#${o.order_number} · ${esc(o.customer_name)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <span style="font-weight:900;font-size:15px;color:#1a0e08">#${o.order_number}</span>
+            <span style="font-size:15px;font-weight:700;color:#5b4636">${esc(o.customer_name)}</span>
+            <span class="badge ${o.status}">${STA[o.status]||o.status}</span>
+          </div>
           <div class="meta">${esc(o.phone)} · ${esc(o.service_type)} · ${esc(o.payment_method)}${o.branch_name?' · 🏪 '+esc(o.branch_name):''}</div>
           ${o.address?`<div class="meta">📍 ${esc(o.address)}</div>`:''}
-          <div class="meta" style="margin-top:5px">${items.map(i=>esc(i.name)+' ×'+i.quantity).join(' · ')}</div>
-          ${o.order_note?`<div class="meta" style="color:#1a0e08;font-weight:700">🗒 ${esc(o.order_note)}</div>`:''}
-          ${o.delivery_notes?`<div class="meta" style="font-style:italic">📝 ${esc(o.delivery_notes)}</div>`:''}
+          <div class="meta" style="margin-top:5px;line-height:1.6">${items.map(i=>`<span style="background:#f5ece0;border-radius:5px;padding:1px 7px;margin-left:4px;display:inline-block">${esc(i.name)} ×${i.quantity}</span>`).join('')}</div>
+          ${o.order_note?`<div class="meta" style="color:#1a0e08;font-weight:700;margin-top:3px">🗒 ${esc(o.order_note)}</div>`:''}
+          ${o.delivery_notes?`<div class="meta" style="font-style:italic;margin-top:2px">📝 ${esc(o.delivery_notes)}</div>`:''}
         </div>
         <div style="text-align:left;flex-shrink:0">
           <div class="price">${o.total} ج.م</div>
           <div class="meta">${new Date(o.created_at).toLocaleString('ar-EG')}</div>
         </div>
       </div>
-      <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
-        <span class="badge ${o.status}">${STA[o.status]||o.status}</span>
-        <select onchange="updateStatus(${o.id},this.value)">
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #ead8bf;display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;color:#9a8674;font-weight:700">تغيير الحالة:</span>
+        <select onchange="updateStatus(${o.id},this.value)" style="font-size:12px;padding:4px 8px">
           ${STAV.map(s=>`<option value="${s}"${s===o.status?' selected':''}>${STA[s]}</option>`).join('')}
         </select>
       </div>
@@ -506,9 +529,14 @@ async function loadCustomers(){
   document.getElementById('main').innerHTML=
     `<h2>العملاء (${data.length})</h2>`+
     data.map(c=>`<div class="card card-click" onclick="openCustomer(${c.id})">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-weight:800;font-size:15px">${esc(c.name)}</div><div class="meta">${esc(c.phone)}</div>${c.address?`<div class="meta">📍 ${esc(c.address)}</div>`:''}</div>
-        <div style="color:#a8160c;font-size:20px">›</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="cust-avatar">${esc(c.name).charAt(0)}</div>
+        <div style="flex:1">
+          <div style="font-weight:800;font-size:15px">${esc(c.name)}</div>
+          <div class="meta">📞 ${esc(c.phone)}</div>
+          ${c.address?`<div class="meta">📍 ${esc(c.address)}</div>`:''}
+        </div>
+        <div style="color:#a8160c;font-size:22px;font-weight:700">›</div>
       </div></div>`).join('')
 }
 
@@ -705,15 +733,16 @@ function renderBranches(){
   }
   document.getElementById('main').innerHTML=header+allBranches.map(b=>
     `<div class="brcard">
-      <div class="bri">
-        <div class="brn">🏪 ${esc(b.name)}</div>
+      <div class="br-icon">🏪</div>
+      <div class="bri" style="flex:1">
+        <div class="brn">${esc(b.name)}</div>
         <div class="brp">📞 ${esc(b.phone)}</div>
         ${b.address?`<div class="bra">📍 ${esc(b.address)}</div>`:''}
         ${b.telegram_chat_id?`<div class="bra">🤖 ${esc(b.telegram_chat_id)}</div>`:''}
       </div>
       <div class="bract">
-        <button class="btn-secondary btn-sm" onclick="show('orders');setTimeout(()=>{const el=document.getElementById('f-branch');if(el){el.value='${b.id}';applyFilters()}},300)">📋 طلباته</button>
-        <button class="btn-secondary btn-sm" onclick="openBranchModal(${b.id})">✏️</button>
+        <button class="btn-secondary btn-sm" onclick="show('orders');setTimeout(()=>{const el=document.getElementById('f-branch');if(el){el.value='${b.id}';applyFilters()}},300)">📋 طلبات</button>
+        <button class="btn-secondary btn-sm" onclick="openBranchModal(${b.id})">✏️ تعديل</button>
         <button class="btn-danger btn-sm" onclick="deleteBranch(${b.id})">🗑</button>
       </div>
     </div>`
@@ -778,10 +807,15 @@ function renderAdmins(){
   document.getElementById('main').innerHTML=header+
     (!allAdmins.length?'<div id="loading" style="padding:20px">لا يوجد مشرفون.</div>':
     allAdmins.map(u=>`<div class="ucard">
-      <div class="ui">
-        <div class="un">${esc(u.username)}</div>
-        <div class="ue">✉️ ${esc(u.email||'')}</div>
-        <div class="ub">${u.branch_name?'🏪 '+esc(u.branch_name):'كل الفروع'} · <span class="${u.role==='super_admin'?'super-tag':'branch-tag'}">${u.role==='super_admin'?'Super Admin':'مشرف فرع'}</span></div>
+      <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
+        <div class="u-avatar" style="background:${u.role==='super_admin'?'linear-gradient(135deg,#7a0d05,#a8160c)':'linear-gradient(135deg,#1d4ed8,#3b82f6)'}">
+          ${u.role==='super_admin'?'👑':'🏪'}
+        </div>
+        <div class="ui" style="min-width:0">
+          <div class="un">${esc(u.username)} <span class="${u.role==='super_admin'?'super-tag':'branch-tag'}">${u.role==='super_admin'?'Super Admin':'مشرف فرع'}</span></div>
+          <div class="ue">✉️ ${esc(u.email||'')}</div>
+          <div class="ub">${u.branch_name?'🏪 '+esc(u.branch_name):'كل الفروع'}</div>
+        </div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
         <button class="btn-secondary btn-sm" onclick="openChangePw(${u.id},'${esc(u.username)}')">🔑 كلمة المرور</button>
@@ -841,13 +875,27 @@ async function deleteAdmin(id){
 // ─── Excel ───────────────────────────────────────────────
 
 async function exportExcel(){
-  const [ord,cus,pro]=await Promise.all([
-    api('/api/orders?limit=5000').then(r=>r.json()),
+  // Apply current filter state to determine which orders to export
+  const from   =(document.getElementById('f-from')||{}).value||''
+  const to     =(document.getElementById('f-to')||{}).value||''
+  const status =(document.getElementById('f-status')||{}).value||''
+  const brId   =(document.getElementById('f-branch')||{}).value||''
+
+  const filtered=allOrders.filter(o=>{
+    const d=new Date(o.created_at)
+    if(from&&d<new Date(from)) return false
+    if(to  &&d>new Date(to+'T23:59:59')) return false
+    if(status&&o.status!==status) return false
+    if(brId  &&String(o.branch_id)!==brId) return false
+    return true
+  })
+
+  const [cus,pro]=await Promise.all([
     api('/api/customers?limit=5000').then(r=>r.json()),
     fetch('/api/products').then(r=>r.json()),
   ])
   const wb=XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(ord.map(o=>({
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filtered.map(o=>({
     'رقم الطلب':o.order_number,'اسم العميل':o.customer_name,'التليفون':o.phone,
     'العنوان':o.address||'','نوع الخدمة':o.service_type,'طريقة الدفع':o.payment_method,
     'الفرع':o.branch_name||'',
