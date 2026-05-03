@@ -193,7 +193,6 @@ select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,
   <button data-tab="customers"               onclick="show('customers')">👤 العملاء</button>
   <button data-tab="products"                onclick="show('products')">🥞 المنتجات</button>
   <button data-tab="branches"  id="tab-branches"    style="display:none" onclick="show('branches')">🏪 الفروع</button>
-  <button data-tab="categories" id="tab-categories" style="display:none" onclick="show('categories')">🗂 الفئات</button>
   <button data-tab="admins"    id="tab-admins"      style="display:none" onclick="show('admins')">🔑 المشرفون</button>
   <button class="btn-excel" onclick="exportExcel()">📊 Excel</button>
 </nav>
@@ -414,7 +413,6 @@ function applySession(){
   // Show/hide super-admin-only tabs
   const isSA = session.role==='super_admin'
   document.getElementById('tab-branches').style.display   = isSA ? '' : 'none'
-  document.getElementById('tab-categories').style.display = isSA ? '' : 'none'
   document.getElementById('tab-admins').style.display     = isSA ? '' : 'none'
   document.getElementById('pf-branches-wrap').style.display = isSA ? '' : 'none'
 }
@@ -636,6 +634,7 @@ function renderProducts(){
     <h2 style="margin:0">المنتجات (${allProducts.length})</h2>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       ${isSA&&!allProducts.length?`<button class="btn-warn" onclick="seedProducts()">📥 استيراد القائمة</button>`:''}
+      ${isSA?`<button class="btn-secondary" onclick="show('categories')" style="font-size:13px">🗂 الفئات</button>`:''}
       <button class="btn-primary" onclick="openProductModal(null)">+ منتج جديد</button>
     </div></div>`
   if(!allProducts.length){
