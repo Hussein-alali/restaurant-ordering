@@ -9,7 +9,9 @@
   * { box-sizing: border-box; margin: 0; padding: 0 }
   body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5ece0; color: #1a0e08; direction: rtl }
   header { background: #a8160c; color: #fff; padding: 16px 24px; display: flex; align-items: center; gap: 12px }
-  header h1 { font-size: 18px }
+  header h1 { font-size: 18px; flex: 1 }
+  #header-user { font-size: 12px; color: #fde6a8; font-weight: 700; display: flex; align-items: center; gap: 8px }
+  #btn-logout { background: rgba(255,255,255,0.2); border: none; color: #fff; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 700 }
   nav { background: #7a0d05; display: flex; gap: 2px; padding: 0 24px; align-items: center }
   nav button { background: transparent; color: rgba(255,255,255,0.7); border: none; padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 600 }
   nav button.active { color: #f4b528; border-bottom: 2px solid #f4b528 }
@@ -35,8 +37,8 @@
   .summary-item .val { font-size: 22px; font-weight: 900 }
   .summary-item .lbl { font-size: 11px; opacity: .8; margin-top: 2px }
   input[type=date], select { padding: 6px 10px; border-radius: 8px; border: 1px solid #ead8bf; font-size: 13px; cursor: pointer; background: #fff; font-family: inherit }
-  .btn-reset  { background: #f4b528; color: #1a0e08; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; align-self: flex-end }
-  .btn-excel  { background: #1d6f42; color: #fff; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-right: auto }
+  .btn-reset    { background: #f4b528; color: #1a0e08; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; align-self: flex-end }
+  .btn-excel    { background: #1d6f42; color: #fff; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-right: auto }
   .btn-primary   { background: #a8160c; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer }
   .btn-secondary { background: #fff; color: #1a0e08; border: 1.5px solid #ead8bf; border-radius: 8px; padding: 8px 16px; font-size: 12px; font-weight: 700; cursor: pointer }
   .btn-seed   { background: #fde6a8; color: #7a0d05; border: none; border-radius: 8px; padding: 8px 16px; font-size: 12px; font-weight: 700; cursor: pointer }
@@ -70,7 +72,6 @@
   .product-img { width:72px; height:72px; border-radius:10px; object-fit:cover; flex-shrink:0 }
   .product-img-placeholder { width:72px; height:72px; border-radius:10px; background:#f5ece0; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:28px }
   .avail-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-left:4px; vertical-align:middle }
-  /* Drop zone */
   .drop-zone {
     border: 2px dashed #ead8bf; border-radius: 10px; padding: 16px 12px;
     text-align: center; cursor: pointer; transition: border-color .2s, background .2s;
@@ -80,23 +81,68 @@
   .drop-zone .drop-icon { font-size: 28px }
   .drop-zone .drop-text { font-size: 12px; color: #9a8674 }
   .drop-zone img { max-height: 100px; max-width: 100%; border-radius: 8px; object-fit: cover }
+  /* Branch checkboxes */
+  .branch-checks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px }
+  .branch-check-item { display: flex; align-items: center; gap: 6px; background: #f5ece0; border: 1.5px solid #ead8bf; border-radius: 8px; padding: 6px 10px; cursor: pointer; transition: border-color .2s }
+  .branch-check-item:has(input:checked) { border-color: #a8160c; background: #fff5f5 }
+  .branch-check-item input { accent-color: #a8160c; width: 15px; height: 15px }
+  .branch-check-item span { font-size: 13px; font-weight: 600 }
+  /* Login screen */
+  #login-screen { display:none; position:fixed; inset:0; background:#f5ece0; z-index:200; justify-content:center; align-items:center; flex-direction:column }
+  #login-screen.visible { display:flex }
+  #login-box { background:#fff; border-radius:16px; padding:32px; width:min(95vw,380px); border:1px solid #ead8bf; box-shadow:0 8px 32px rgba(168,22,12,.12) }
+  #login-box h2 { font-size:20px; font-weight:900; color:#a8160c; text-align:center; margin-bottom:24px }
+  #login-box .form-group input { font-size:15px; padding:11px 14px }
+  #login-error { color:#a8160c; font-size:13px; font-weight:700; text-align:center; margin-bottom:12px; min-height:18px }
+  /* Branch card */
+  .branch-card { background:#fff; border:1px solid #ead8bf; border-radius:12px; padding:16px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:flex-start }
+  .branch-card .branch-info { flex:1 }
+  .branch-card .branch-name { font-size:15px; font-weight:800; color:#1a0e08 }
+  .branch-card .branch-phone { font-size:13px; color:#5b4636; margin-top:3px }
+  .branch-card .branch-addr { font-size:12px; color:#9a8674; margin-top:2px }
+  .branch-card .branch-actions { display:flex; gap:6px; flex-shrink:0 }
 </style>
 </head>
 <body>
 
+<!-- Login Screen -->
+<div id="login-screen" class="visible">
+  <div id="login-box">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="width:56px;height:56px;background:#a8160c;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;color:#f4b528;margin:0 auto 10px">CC</div>
+      <h2>Crepe Corner Admin</h2>
+    </div>
+    <div id="login-error"></div>
+    <div class="form-group">
+      <label>اسم المستخدم</label>
+      <input type="text" id="li-user" placeholder="admin" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>كلمة المرور</label>
+      <input type="password" id="li-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-primary" style="width:100%;padding:12px;font-size:15px;margin-top:4px" onclick="doLogin()">دخول</button>
+  </div>
+</div>
+
 <header>
   <div style="width:36px;height:36px;background:#f4b528;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#1a0e08">CC</div>
   <h1>Crepe Corner — لوحة التحكم</h1>
+  <div id="header-user">
+    <span id="admin-name"></span>
+    <button id="btn-logout" onclick="doLogout()">خروج</button>
+  </div>
 </header>
 <nav>
   <button class="active" onclick="show('orders')">الطلبات</button>
   <button onclick="show('customers')">العملاء</button>
   <button onclick="show('products')">المنتجات</button>
+  <button onclick="show('branches')">الفروع</button>
   <button class="btn-excel" onclick="exportExcel()">📊 تصدير Excel</button>
 </nav>
 <main id="main"><div id="loading">جاري التحميل…</div></main>
 
-<!-- Customer modal -->
+<!-- Customer / generic modal -->
 <div class="modal-backdrop" id="modal" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal">
     <div class="modal-header">
@@ -107,28 +153,23 @@
   </div>
 </div>
 
-<!-- Product modal (static, populated via JS) -->
+<!-- Product modal -->
 <div class="modal-backdrop" id="product-modal" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal">
     <div class="modal-header">
       <h3 id="pmodal-title">منتج جديد</h3>
       <button class="close-btn" onclick="document.getElementById('product-modal').classList.remove('open')">✕</button>
     </div>
-
     <form id="pform" onsubmit="saveProduct(event)">
       <input type="hidden" id="pf-id">
-
       <div class="form-group">
         <label>الاسم *</label>
         <input type="text" id="pf-name" required placeholder="اسم المنتج">
       </div>
-
       <div class="form-group">
         <label>الوصف</label>
         <textarea id="pf-desc" rows="2" placeholder="وصف مختصر للمكونات أو المميزات"></textarea>
       </div>
-
-      <!-- Drop zone -->
       <div class="form-group">
         <label>الصورة</label>
         <input type="file" id="pf-file" accept="image/*" style="display:none" onchange="onFileChosen(this)">
@@ -146,7 +187,6 @@
           <input type="text" id="pf-image-url" placeholder="https://..." style="flex:1;padding:5px 9px;font-size:12px;border-radius:6px;border:1px solid #ead8bf" oninput="onUrlInput(this.value)">
         </div>
       </div>
-
       <div class="form-row">
         <div class="form-group">
           <label>السعر الأصلي (ج.م) *</label>
@@ -157,7 +197,6 @@
           <input type="number" id="pf-discount" min="0" placeholder="اتركه فارغاً لو مفيش خصم">
         </div>
       </div>
-
       <div class="form-row">
         <div class="form-group">
           <label>مدة التوصيل</label>
@@ -168,7 +207,12 @@
           <input type="text" id="pf-type" placeholder="مثال: كريب، مشروبات">
         </div>
       </div>
-
+      <div class="form-group">
+        <label>متاح في الفروع <span style="font-size:11px;color:#9a8674;font-weight:400">(لو مش محدد = متاح في كل الفروع)</span></label>
+        <div class="branch-checks" id="pf-branches">
+          <span style="font-size:12px;color:#9a8674">لا توجد فروع بعد</span>
+        </div>
+      </div>
       <div class="toggle-row">
         <label class="toggle">
           <input type="checkbox" id="pf-avail" checked>
@@ -176,7 +220,6 @@
         </label>
         <span style="font-size:13px;font-weight:700">المنتج متاح للطلب</span>
       </div>
-
       <div style="display:flex;gap:10px">
         <button type="submit" class="btn-primary" style="flex:1" id="psubmit-btn">إضافة المنتج</button>
         <button type="button" class="btn-secondary" onclick="document.getElementById('product-modal').classList.remove('open')">إلغاء</button>
@@ -185,28 +228,126 @@
   </div>
 </div>
 
-<script>
-// ─── State ────────────────────────────────────────────────
-const STATUS_AR  = { pending: 'قيد الانتظار', preparing: 'جاري التحضير', on_the_way: 'في الطريق', delivered: 'تم التوصيل', cancelled: 'ملغي' }
-const STATUS_VALS = Object.keys(STATUS_AR)
-let allOrders = []
-let allProducts = []
-let currentTab = 'orders'
-let pendingImageData = '' // holds base64 data URL or empty string
+<!-- Branch modal -->
+<div class="modal-backdrop" id="branch-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="bmodal-title">فرع جديد</h3>
+      <button class="close-btn" onclick="document.getElementById('branch-modal').classList.remove('open')">✕</button>
+    </div>
+    <form id="bform" onsubmit="saveBranch(event)">
+      <input type="hidden" id="bf-id">
+      <div class="form-group">
+        <label>اسم الفرع *</label>
+        <input type="text" id="bf-name" required placeholder="مثال: فرع كفر صقر">
+      </div>
+      <div class="form-group">
+        <label>رقم التليفون *</label>
+        <input type="text" id="bf-phone" required placeholder="01xxxxxxxxx">
+      </div>
+      <div class="form-group">
+        <label>العنوان</label>
+        <input type="text" id="bf-address" placeholder="شارع ورقم">
+      </div>
+      <div class="form-group">
+        <label>Telegram Chat ID <span style="font-size:11px;color:#9a8674;font-weight:400">(اختياري — لإرسال إشعارات الطلبات لهذا الفرع)</span></label>
+        <input type="text" id="bf-tgchat" placeholder="-100xxxxxxxxxx">
+      </div>
+      <div style="display:flex;gap:10px">
+        <button type="submit" class="btn-primary" style="flex:1" id="bsubmit-btn">إضافة الفرع</button>
+        <button type="button" class="btn-secondary" onclick="document.getElementById('branch-modal').classList.remove('open')">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-// ─── Nav ──────────────────────────────────────────────────
+<script>
+const STATUS_AR   = { pending: 'قيد الانتظار', preparing: 'جاري التحضير', on_the_way: 'في الطريق', delivered: 'تم التوصيل', cancelled: 'ملغي' }
+const STATUS_VALS = Object.keys(STATUS_AR)
+let allOrders   = []
+let allProducts = []
+let allBranches = []
+let currentTab  = 'orders'
+let pendingImageData = ''
+
+// ─── Auth ────────────────────────────────────────────────
+
+function getToken() { return localStorage.getItem('admin_token') || '' }
+function setToken(t) { localStorage.setItem('admin_token', t) }
+function clearToken() { localStorage.removeItem('admin_token') }
+
+function authFetch(url, opts = {}) {
+  const token = getToken()
+  return fetch(url, {
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
+      ...(opts.headers || {}),
+    },
+    body: opts.body,
+  })
+}
+
+async function doLogin() {
+  const username = document.getElementById('li-user').value.trim()
+  const password = document.getElementById('li-pass').value
+  document.getElementById('login-error').textContent = ''
+  if (!username || !password) { document.getElementById('login-error').textContent = 'أدخل اسم المستخدم وكلمة المرور'; return }
+  try {
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    })
+    const data = await res.json()
+    if (!res.ok) { document.getElementById('login-error').textContent = data.error || 'خطأ في تسجيل الدخول'; return }
+    setToken(data.token)
+    document.getElementById('admin-name').textContent = data.username
+    document.getElementById('login-screen').classList.remove('visible')
+    loadBranches().then(() => show('orders'))
+  } catch {
+    document.getElementById('login-error').textContent = 'خطأ في الاتصال'
+  }
+}
+
+function doLogout() {
+  clearToken()
+  allOrders = []; allProducts = []; allBranches = []
+  document.getElementById('login-screen').classList.add('visible')
+  document.getElementById('li-pass').value = ''
+  document.getElementById('login-error').textContent = ''
+}
+
+async function checkAuth() {
+  const token = getToken()
+  if (!token) return false
+  try {
+    const res = await fetch('/api/admin/me', { headers: { 'Authorization': 'Bearer ' + token } })
+    if (!res.ok) return false
+    const data = await res.json()
+    document.getElementById('admin-name').textContent = data.username
+    return true
+  } catch { return false }
+}
+
+// ─── Nav ─────────────────────────────────────────────────
+
 function show(tab) {
   currentTab = tab
+  const tabs = ['orders', 'customers', 'products', 'branches']
   document.querySelectorAll('nav button:not(.btn-excel)').forEach((b, i) => {
-    b.classList.toggle('active', (i===0&&tab==='orders')||(i===1&&tab==='customers')||(i===2&&tab==='products'))
+    b.classList.toggle('active', tabs[i] === tab)
   })
   document.getElementById('main').innerHTML = '<div id="loading">جاري التحميل…</div>'
   if (tab === 'orders')    loadOrders(true)
   else if (tab === 'customers') loadCustomers()
-  else                     loadProducts()
+  else if (tab === 'products')  loadProducts()
+  else                          renderBranches()
 }
 
 // ─── Orders ──────────────────────────────────────────────
+
 async function loadOrders(init) {
   try {
     const data = await fetch('/api/orders?limit=500').then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
@@ -219,6 +360,7 @@ async function loadOrders(init) {
 }
 
 function renderFilters() {
+  const branchOpts = allBranches.map(b => '<option value="' + b.id + '">' + esc(b.name) + '</option>').join('')
   document.getElementById('main').innerHTML =
     '<div class="filters" id="filters-bar">' +
       '<div class="filters-group"><label>من تاريخ</label><input type="date" id="f-from" onchange="applyFilters()"></div>' +
@@ -227,20 +369,23 @@ function renderFilters() {
         '<select id="f-status" onchange="applyFilters()"><option value="">الكل</option>' +
         STATUS_VALS.map(s => '<option value="' + s + '">' + STATUS_AR[s] + '</option>').join('') +
         '</select></div>' +
+      (branchOpts ? '<div class="filters-group"><label>الفرع</label><select id="f-branch" onchange="applyFilters()"><option value="">الكل</option>' + branchOpts + '</select></div>' : '') +
       '<button class="btn-reset" onclick="resetFilters()">مسح الفلاتر</button>' +
     '</div>' +
     '<div id="summary-bar"></div><div id="orders-list"></div>'
 }
 
 function applyFilters() {
-  const from   = (document.getElementById('f-from')   || {}).value || ''
-  const to     = (document.getElementById('f-to')     || {}).value || ''
-  const status = (document.getElementById('f-status') || {}).value || ''
+  const from     = (document.getElementById('f-from')   || {}).value || ''
+  const to       = (document.getElementById('f-to')     || {}).value || ''
+  const status   = (document.getElementById('f-status') || {}).value || ''
+  const branchId = (document.getElementById('f-branch') || {}).value || ''
   const filtered = allOrders.filter(o => {
     const d = new Date(o.created_at)
     if (from && d < new Date(from)) return false
     if (to   && d > new Date(to + 'T23:59:59')) return false
     if (status && o.status !== status) return false
+    if (branchId && String(o.branch_id) !== branchId) return false
     return true
   })
   const totalPrice = filtered.reduce((s, o) => s + Number(o.total), 0)
@@ -258,11 +403,12 @@ function applyFilters() {
     const items = Array.isArray(o.items) ? o.items : JSON.parse(o.items)
     return '<div class="card">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
-        '<div><div style="font-weight:800;font-size:15px">#' + o.order_number + ' · ' + o.customer_name + '</div>' +
-          '<div class="meta">' + o.phone + ' · ' + o.service_type + ' · ' + o.payment_method + '</div>' +
-          (o.address ? '<div class="meta">📍 ' + o.address + '</div>' : '') +
-          '<div class="meta" style="margin-top:6px">' + items.map(i => i.name + ' ×' + i.quantity).join(' · ') + '</div>' +
-          (o.delivery_notes ? '<div class="meta" style="color:#5b4636;font-style:italic">📝 ' + o.delivery_notes + '</div>' : '') +
+        '<div><div style="font-weight:800;font-size:15px">#' + o.order_number + ' · ' + esc(o.customer_name) + '</div>' +
+          '<div class="meta">' + esc(o.phone) + ' · ' + esc(o.service_type) + ' · ' + esc(o.payment_method) + (o.branch_name ? ' · 🏪 ' + esc(o.branch_name) : '') + '</div>' +
+          (o.address ? '<div class="meta">📍 ' + esc(o.address) + '</div>' : '') +
+          '<div class="meta" style="margin-top:6px">' + items.map(i => esc(i.name) + ' ×' + i.quantity).join(' · ') + '</div>' +
+          (o.order_note ? '<div class="meta" style="color:#1a0e08;font-style:italic;font-weight:600">🗒 ' + esc(o.order_note) + '</div>' : '') +
+          (o.delivery_notes ? '<div class="meta" style="color:#5b4636;font-style:italic">📝 ' + esc(o.delivery_notes) + '</div>' : '') +
         '</div>' +
         '<div style="text-align:left;flex-shrink:0"><div class="price">' + o.total + ' ج.م</div>' +
           '<div class="meta">' + new Date(o.created_at).toLocaleString('ar-EG') + '</div></div>' +
@@ -277,7 +423,7 @@ function applyFilters() {
 }
 
 function resetFilters() {
-  ['f-from','f-to','f-status'].forEach(id => { const el = document.getElementById(id); if (el) el.value = '' })
+  ['f-from','f-to','f-status','f-branch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = '' })
   applyFilters()
 }
 
@@ -287,6 +433,7 @@ async function updateStatus(id, status) {
 }
 
 // ─── Customers ───────────────────────────────────────────
+
 async function loadCustomers() {
   let data
   try { data = await fetch('/api/customers?limit=500').then(r => { if (!r.ok) throw new Error(r.status); return r.json() }) }
@@ -297,9 +444,9 @@ async function loadCustomers() {
     data.map(c =>
       '<div class="card card-clickable" onclick="openCustomer(' + c.id + ')">' +
         '<div style="display:flex;justify-content:space-between;align-items:center">' +
-          '<div><div style="font-weight:800;font-size:15px">' + c.name + '</div>' +
-            '<div class="meta">' + c.phone + '</div>' +
-            (c.address ? '<div class="meta">📍 ' + c.address + '</div>' : '') +
+          '<div><div style="font-weight:800;font-size:15px">' + esc(c.name) + '</div>' +
+            '<div class="meta">' + esc(c.phone) + '</div>' +
+            (c.address ? '<div class="meta">📍 ' + esc(c.address) + '</div>' : '') +
           '</div><div style="color:#a8160c;font-size:20px">›</div>' +
         '</div></div>'
     ).join('')
@@ -313,7 +460,7 @@ async function openCustomer(id) {
   document.getElementById('modal-title').textContent = data.name + ' — ' + data.phone
   const totalSpent = data.orders.reduce((s, o) => s + Number(o.total), 0)
   document.getElementById('modal-body').innerHTML =
-    (data.address ? '<div class="meta" style="margin-bottom:10px">📍 ' + data.address + '</div>' : '') +
+    (data.address ? '<div class="meta" style="margin-bottom:10px">📍 ' + esc(data.address) + '</div>' : '') +
     '<div style="display:flex;gap:20px;margin-bottom:16px">' +
       '<div><div style="font-size:20px;font-weight:900;color:#a8160c">' + data.orders.length + '</div><div class="meta">طلب</div></div>' +
       '<div><div style="font-size:20px;font-weight:900;color:#a8160c">' + totalSpent.toLocaleString('ar-EG') + ' ج.م</div><div class="meta">إجمالي الإنفاق</div></div>' +
@@ -328,7 +475,7 @@ async function openCustomer(id) {
               '<div style="font-weight:800;color:#a8160c">' + o.total + ' ج.م</div>' +
             '</div>' +
             '<div class="meta">' + new Date(o.created_at).toLocaleString('ar-EG') + '</div>' +
-            '<div class="meta" style="margin-top:4px">' + items.map(i => i.name + ' ×' + i.quantity).join(' · ') + '</div>' +
+            '<div class="meta" style="margin-top:4px">' + items.map(i => esc(i.name) + ' ×' + i.quantity).join(' · ') + '</div>' +
             '<div style="margin-top:6px"><span class="badge ' + o.status + '">' + (STATUS_AR[o.status] || o.status) + '</span></div>' +
           '</div>'
         }).join('')
@@ -337,6 +484,7 @@ async function openCustomer(id) {
 }
 
 // ─── Products ────────────────────────────────────────────
+
 async function loadProducts() {
   try {
     allProducts = await fetch('/api/products').then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
@@ -362,7 +510,6 @@ function renderProducts() {
     return
   }
 
-  // Group by type
   const groups = {}
   allProducts.forEach(p => {
     const key = p.type || 'بدون فئة'
@@ -393,12 +540,9 @@ function toggleSection(header) {
 
 function productCardHtml(p) {
   const hasDiscount = p.discounted_price && Number(p.discounted_price) < Number(p.original_price)
-  let imgHtml
-  if (p.image_url) {
-    imgHtml = '<img class="product-img" src="' + esc(p.image_url) + '" alt="" onerror="this.style.display=\'none\'">'
-  } else {
-    imgHtml = '<div class="product-img-placeholder">🥞</div>'
-  }
+  let imgHtml = p.image_url
+    ? '<img class="product-img" src="' + esc(p.image_url) + '" alt="" onerror="this.style.display=\'none\'">'
+    : '<div class="product-img-placeholder">🥞</div>'
   return '<div class="product-card">' +
     imgHtml +
     '<div style="flex:1;min-width:0">' +
@@ -424,7 +568,7 @@ function productCardHtml(p) {
     '</div></div>'
 }
 
-function openProductModal(id) {
+async function openProductModal(id) {
   const p = id ? allProducts.find(x => x.id === id) : null
   document.getElementById('pmodal-title').textContent = p ? 'تعديل: ' + p.name : 'منتج جديد'
   document.getElementById('pf-id').value       = p ? p.id : ''
@@ -437,12 +581,37 @@ function openProductModal(id) {
   document.getElementById('pf-avail').checked  = p ? Boolean(p.available) : true
   document.getElementById('psubmit-btn').textContent = p ? 'حفظ التغييرات' : 'إضافة المنتج'
   document.getElementById('pf-file').value = ''
-  // Reset drop zone
   pendingImageData = ''
   const existingUrl = p ? (p.image_url || '') : ''
   document.getElementById('pf-image-url').value = existingUrl
   setDropZonePreview(existingUrl)
+
+  // Load branch assignments
+  let assignedBranches = []
+  if (p) {
+    try { assignedBranches = await fetch('/api/products/' + p.id + '/branches').then(r => r.json()) } catch {}
+  }
+  renderBranchCheckboxes(assignedBranches)
+
   document.getElementById('product-modal').classList.add('open')
+}
+
+function renderBranchCheckboxes(assignedIds = []) {
+  const container = document.getElementById('pf-branches')
+  if (!allBranches.length) {
+    container.innerHTML = '<span style="font-size:12px;color:#9a8674">لا توجد فروع — أضف فروعاً أولاً</span>'
+    return
+  }
+  container.innerHTML = allBranches.map(b =>
+    '<label class="branch-check-item">' +
+      '<input type="checkbox" name="branch-check" value="' + b.id + '"' + (assignedIds.includes(b.id) ? ' checked' : '') + '>' +
+      '<span>' + esc(b.name) + '</span>' +
+    '</label>'
+  ).join('')
+}
+
+function getSelectedBranchIds() {
+  return Array.from(document.querySelectorAll('#pf-branches input[type=checkbox]:checked')).map(el => Number(el.value))
 }
 
 function setDropZonePreview(src) {
@@ -450,44 +619,23 @@ function setDropZonePreview(src) {
   const text = document.getElementById('drop-text')
   const prev = document.getElementById('drop-preview')
   if (src) {
-    icon.style.display = 'none'
-    text.style.display = 'none'
-    prev.style.display = 'block'
-    prev.src = src
+    icon.style.display = 'none'; text.style.display = 'none'
+    prev.style.display = 'block'; prev.src = src
   } else {
-    icon.style.display = 'block'
-    text.style.display = 'block'
-    prev.style.display = 'none'
-    prev.src = ''
+    icon.style.display = 'block'; text.style.display = 'block'
+    prev.style.display = 'none'; prev.src = ''
   }
 }
 
-function onUrlInput(val) {
-  pendingImageData = ''
-  setDropZonePreview(val)
-}
-
-function onDragOver(e) {
-  e.preventDefault()
-  document.getElementById('drop-zone').classList.add('dragover')
-}
-
-function onDragLeave(e) {
-  document.getElementById('drop-zone').classList.remove('dragover')
-}
-
+function onUrlInput(val) { pendingImageData = ''; setDropZonePreview(val) }
+function onDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('dragover') }
+function onDragLeave() { document.getElementById('drop-zone').classList.remove('dragover') }
 function onDrop(e) {
-  e.preventDefault()
-  document.getElementById('drop-zone').classList.remove('dragover')
+  e.preventDefault(); document.getElementById('drop-zone').classList.remove('dragover')
   const file = e.dataTransfer.files[0]
   if (file && file.type.startsWith('image/')) readImageFile(file)
 }
-
-function onFileChosen(input) {
-  const file = input.files[0]
-  if (file) readImageFile(file)
-}
-
+function onFileChosen(input) { const file = input.files[0]; if (file) readImageFile(file) }
 function readImageFile(file) {
   const reader = new FileReader()
   reader.onload = ev => {
@@ -500,8 +648,8 @@ function readImageFile(file) {
 
 async function saveProduct(e) {
   e.preventDefault()
-  const id  = document.getElementById('pf-id').value
-  const urlVal = document.getElementById('pf-image-url').value.trim()
+  const id      = document.getElementById('pf-id').value
+  const urlVal  = document.getElementById('pf-image-url').value.trim()
   const imageUrl = pendingImageData || urlVal || null
   const body = {
     name:             document.getElementById('pf-name').value.trim(),
@@ -514,12 +662,19 @@ async function saveProduct(e) {
     available:        document.getElementById('pf-avail').checked,
   }
   try {
-    const res = await fetch(id ? '/api/products/' + id : '/api/products', {
+    const res = await authFetch(id ? '/api/products/' + id : '/api/products', {
       method: id ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
     if (!res.ok) throw new Error(res.status)
+    const saved = await res.json()
+    const savedId = saved.id || id
+    // Save branch assignments
+    const branchIds = getSelectedBranchIds()
+    await authFetch('/api/products/' + savedId + '/branches', {
+      method: 'PUT',
+      body: JSON.stringify({ branchIds }),
+    })
     document.getElementById('product-modal').classList.remove('open')
     loadProducts()
   } catch (err) {
@@ -529,7 +684,7 @@ async function saveProduct(e) {
 
 async function deleteProduct(id) {
   if (!confirm('هتمسح المنتج ده؟')) return
-  await fetch('/api/products/' + id, { method: 'DELETE' })
+  await authFetch('/api/products/' + id, { method: 'DELETE' })
   loadProducts()
 }
 
@@ -545,7 +700,88 @@ async function seedProducts() {
   }
 }
 
+// ─── Branches ────────────────────────────────────────────
+
+async function loadBranches() {
+  try {
+    allBranches = await fetch('/api/branches').then(r => r.json())
+  } catch { allBranches = [] }
+}
+
+function renderBranches() {
+  const header =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+      '<h2 style="margin:0">الفروع (' + allBranches.length + ')</h2>' +
+      '<button class="btn-primary" onclick="openBranchModal(null)">+ فرع جديد</button>' +
+    '</div>'
+
+  if (!allBranches.length) {
+    document.getElementById('main').innerHTML = header +
+      '<div id="loading" style="padding:20px">لا توجد فروع بعد — أضف فرعاً جديداً.</div>'
+    return
+  }
+
+  document.getElementById('main').innerHTML = header +
+    allBranches.map(b =>
+      '<div class="branch-card">' +
+        '<div class="branch-info">' +
+          '<div class="branch-name">🏪 ' + esc(b.name) + '</div>' +
+          '<div class="branch-phone">📞 ' + esc(b.phone) + '</div>' +
+          (b.address ? '<div class="branch-addr">📍 ' + esc(b.address) + '</div>' : '') +
+          (b.telegram_chat_id ? '<div class="branch-addr">🤖 Telegram: ' + esc(b.telegram_chat_id) + '</div>' : '') +
+        '</div>' +
+        '<div class="branch-actions">' +
+          '<button class="btn-secondary" onclick="openBranchModal(' + b.id + ')">✏️ تعديل</button>' +
+          '<button class="btn-danger" onclick="deleteBranch(' + b.id + ')">🗑 حذف</button>' +
+        '</div>' +
+      '</div>'
+    ).join('')
+}
+
+function openBranchModal(id) {
+  const b = id ? allBranches.find(x => x.id === id) : null
+  document.getElementById('bmodal-title').textContent = b ? 'تعديل: ' + b.name : 'فرع جديد'
+  document.getElementById('bf-id').value      = b ? b.id : ''
+  document.getElementById('bf-name').value    = b ? b.name : ''
+  document.getElementById('bf-phone').value   = b ? b.phone : ''
+  document.getElementById('bf-address').value = b ? (b.address || '') : ''
+  document.getElementById('bf-tgchat').value  = b ? (b.telegram_chat_id || '') : ''
+  document.getElementById('bsubmit-btn').textContent = b ? 'حفظ التغييرات' : 'إضافة الفرع'
+  document.getElementById('branch-modal').classList.add('open')
+}
+
+async function saveBranch(e) {
+  e.preventDefault()
+  const id = document.getElementById('bf-id').value
+  const body = {
+    name:             document.getElementById('bf-name').value.trim(),
+    phone:            document.getElementById('bf-phone').value.trim(),
+    address:          document.getElementById('bf-address').value.trim() || null,
+    telegram_chat_id: document.getElementById('bf-tgchat').value.trim() || null,
+  }
+  try {
+    const res = await authFetch(id ? '/api/branches/' + id : '/api/branches', {
+      method: id ? 'PUT' : 'POST',
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) throw new Error(res.status)
+    document.getElementById('branch-modal').classList.remove('open')
+    await loadBranches()
+    renderBranches()
+  } catch (err) {
+    alert('حصل خطأ: ' + err.message)
+  }
+}
+
+async function deleteBranch(id) {
+  if (!confirm('هتمسح الفرع ده؟')) return
+  await authFetch('/api/branches/' + id, { method: 'DELETE' })
+  await loadBranches()
+  renderBranches()
+}
+
 // ─── Excel ────────────────────────────────────────────────
+
 async function exportExcel() {
   const [ordersRaw, customersRaw, productsRaw] = await Promise.all([
     fetch('/api/orders?limit=5000').then(r => r.json()),
@@ -555,9 +791,12 @@ async function exportExcel() {
   const ordersSheet = ordersRaw.map(o => ({
     'رقم الطلب':    o.order_number, 'اسم العميل': o.customer_name, 'التليفون': o.phone,
     'العنوان':      o.address || '', 'نوع الخدمة': o.service_type, 'طريقة الدفع': o.payment_method,
+    'الفرع':        o.branch_name || '',
     'الأصناف':      (Array.isArray(o.items)?o.items:JSON.parse(o.items)).map(i=>i.name+' ×'+i.quantity).join(' | '),
     'المجموع':      o.subtotal, 'رسوم التوصيل': o.delivery_fee, 'الإجمالي': o.total,
-    'ملاحظات':      o.delivery_notes || '', 'الحالة': STATUS_AR[o.status]||o.status,
+    'ملاحظة الطلب': o.order_note || '',
+    'ملاحظات التوصيل': o.delivery_notes || '',
+    'الحالة':       STATUS_AR[o.status]||o.status,
     'التاريخ':      new Date(o.created_at).toLocaleString('ar-EG'),
   }))
   const customersSheet = customersRaw.map(c => ({
@@ -580,9 +819,19 @@ function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
 
-// Boot
-show('orders')
-setInterval(() => { if (currentTab === 'orders') loadOrders(false) }, 15000)
+// ─── Boot ─────────────────────────────────────────────────
+
+async function boot() {
+  const ok = await checkAuth()
+  if (ok) {
+    document.getElementById('login-screen').classList.remove('visible')
+    await loadBranches()
+    show('orders')
+    setInterval(() => { if (currentTab === 'orders') loadOrders(false) }, 15000)
+  }
+}
+
+boot()
 </script>
 </body>
 </html>

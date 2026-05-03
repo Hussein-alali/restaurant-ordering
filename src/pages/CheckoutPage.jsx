@@ -173,7 +173,20 @@ function CheckoutPage() {
                 <Field label="الدور / الشقة" value={state.customer.building} onChange={v => updateCustomer('building', v)} placeholder="مثال: الدور الثالث، شقة ٢" optional />
               </>
             )}
-            <Field label={isDelivery ? 'ملاحظة للتوصيل' : 'طلبات خاصة'} value={state.customer.deliveryNotes} onChange={v => updateCustomer('deliveryNotes', v)} placeholder="مثال: اطرق الباب الجانبي…" optional />
+            <Field
+              label="ملاحظة على الطلب"
+              value={state.customer.orderNote || ''}
+              onChange={v => updateCustomer('orderNote', v)}
+              placeholder="مثال: بدون طماطم، زيادة صوص، إلخ…"
+              optional
+            />
+            <Field
+              label={isDelivery ? 'ملاحظة للتوصيل' : 'طلبات خاصة'}
+              value={state.customer.deliveryNotes}
+              onChange={v => updateCustomer('deliveryNotes', v)}
+              placeholder="مثال: اطرق الباب الجانبي…"
+              optional
+            />
           </>
         )}
 
@@ -187,6 +200,7 @@ function CheckoutPage() {
               <div style={{ fontSize: 14, fontWeight: 800, color: C.ink }}>{state.customer.name}</div>
               <div style={{ fontSize: 13, color: C.body, marginTop: 2 }}>{state.customer.phone}</div>
               {isDelivery && <div style={{ fontSize: 13, color: C.body, marginTop: 2 }}>{[state.customer.address, state.customer.building].filter(Boolean).join(' · ')}</div>}
+              {state.customer.orderNote && <div style={{ fontSize: 12, color: C.ink, fontWeight: 700, marginTop: 4 }}>🗒 {state.customer.orderNote}</div>}
               {state.customer.deliveryNotes && <div style={{ fontSize: 12, color: C.muted, fontStyle: 'italic', marginTop: 2 }}>{state.customer.deliveryNotes}</div>}
             </div>
 

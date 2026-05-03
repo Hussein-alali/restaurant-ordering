@@ -1,21 +1,47 @@
 import express from 'express'
 import cors from 'cors'
+import jwt from 'jsonwebtoken'
+import bcrypt from 'bcryptjs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { createOrder, getOrders, getOrderById, updateOrderStatus, getCustomers, getCustomerWithOrders, getCustomerByPhone, getProducts, createProduct, updateProduct, deleteProduct } from './db.js'
+import {
+  createOrder, getOrders, getOrderById, updateOrderStatus,
+  getCustomers, getCustomerWithOrders, getCustomerByPhone,
+  getProducts, createProduct, updateProduct, deleteProduct,
+  getProductsForBranch, setProductBranches, getProductBranches,
+  getBranches, getBranchById, createBranch, updateBranch, deleteBranch,
+  getAdminByUsername,
+} from './db.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const app = express()
 const PORT = process.env.PORT || 3001
-const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const TG_CHAT  = process.env.TELEGRAM_CHAT_ID
+const TG_TOKEN  = process.env.TELEGRAM_BOT_TOKEN
+const TG_CHAT   = process.env.TELEGRAM_CHAT_ID
+const JWT_SECRET = process.env.JWT_SECRET || 'crepe-corner-secret-2024'
 
-async function sendTelegram(orderId, orderNumber, data) {
-  if (!TG_TOKEN || !TG_CHAT) {
-    console.error('Telegram: missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID')
+// ─── Admin Auth Middleware ────────────────────────────────
+
+function adminAuth(req, res, next) {
+  const token = (req.headers.authorization || '').replace('Bearer ', '')
+  if (!token) return res.status(401).json({ error: 'غير مصرح' })
+  try {
+    req.admin = jwt.verify(token, JWT_SECRET)
+    next()
+  } catch {
+    res.status(401).json({ error: 'رمز غير صحيح' })
+  }
+}
+
+// ─── Telegram ────────────────────────────────────────────
+
+async function sendTelegram(orderId, orderNumber, data, branchChatId) {
+  const chatId = branchChatId || TG_CHAT
+  if (!TG_TOKEN || !chatId) {
+    console.error('Telegram: missing token or chat id')
     return
   }
-  const { customerName, phone, address, items, totalPrice, deliveryNotes, serviceType, paymentMethod } = data
+  const { customerName, phone, address, items, totalPrice, deliveryNotes, orderNote, serviceType, paymentMethod, branchName } = data
 
   const itemLines = items
     .map(i => `• ${i.name} ×${i.quantity} — ${Number(i.price) * Number(i.quantity)} ج.م`)
@@ -24,14 +50,13 @@ async function sendTelegram(orderId, orderNumber, data) {
   const lines = [
     '🍽️ <b>طلب جديد!</b>',
     `🔢 <b>${orderNumber}</b>`,
-    '',
-    '👤 <b>العميل</b>',
-    `الاسم: ${customerName}`,
-    `📞 ${phone}`,
   ]
+  if (branchName) lines.push(`🏪 <b>الفرع: ${branchName}</b>`)
+  lines.push('', '👤 <b>العميل</b>', `الاسم: ${customerName}`, `📞 ${phone}`)
   if (address)       lines.push(`📍 ${address}`)
   if (serviceType)   lines.push(`النوع: ${serviceType}`)
   if (paymentMethod) lines.push(`الدفع: ${paymentMethod}`)
+  if (orderNote)     lines.push(`🗒 <i>${orderNote}</i>`)
   if (deliveryNotes) lines.push(`📝 <i>${deliveryNotes}</i>`)
   lines.push('', '📦 <b>الأصناف</b>', itemLines, '', `💰 <b>الإجمالي: ${Number(totalPrice) + 15} ج.م</b>`)
 
@@ -48,11 +73,11 @@ async function sendTelegram(orderId, orderNumber, data) {
     ],
   }
 
-  const res  = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+  const res = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      chat_id: TG_CHAT,
+      chat_id: chatId,
       text: lines.join('\n'),
       parse_mode: 'HTML',
       reply_markup: keyboard,
@@ -68,9 +93,59 @@ async function sendTelegram(orderId, orderNumber, data) {
 }
 
 app.use(cors())
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
+
+// ─── Admin Auth ───────────────────────────────────────────
+
+app.post('/api/admin/login', async (req, res) => {
+  const { username, password } = req.body || {}
+  if (!username || !password) return res.status(400).json({ error: 'بيانات ناقصة' })
+  const admin = await getAdminByUsername(username).catch(() => null)
+  if (!admin) return res.status(401).json({ error: 'بيانات خاطئة' })
+  const ok = await bcrypt.compare(password, admin.password_hash)
+  if (!ok) return res.status(401).json({ error: 'بيانات خاطئة' })
+  const token = jwt.sign({ id: admin.id, username: admin.username }, JWT_SECRET, { expiresIn: '30d' })
+  res.json({ token, username: admin.username })
+})
+
+app.get('/api/admin/me', adminAuth, (req, res) => {
+  res.json({ username: req.admin.username })
+})
+
+// ─── Branches ────────────────────────────────────────────
+
+app.get('/api/branches', async (req, res) => {
+  res.json(await getBranches())
+})
+
+app.post('/api/branches', adminAuth, async (req, res) => {
+  try {
+    const branch = await createBranch(req.body)
+    res.status(201).json(branch)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'خطأ في الخادم' })
+  }
+})
+
+app.put('/api/branches/:id', adminAuth, async (req, res) => {
+  try {
+    const branch = await updateBranch(Number(req.params.id), req.body)
+    if (!branch) return res.status(404).json({ error: 'الفرع مش موجود' })
+    res.json(branch)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'خطأ في الخادم' })
+  }
+})
+
+app.delete('/api/branches/:id', adminAuth, async (req, res) => {
+  await deleteBranch(Number(req.params.id))
+  res.json({ ok: true })
+})
 
 // ─── Orders ──────────────────────────────────────────────
+
 app.post('/api/orders', async (req, res) => {
   try {
     const data = req.body
@@ -80,7 +155,16 @@ app.post('/api/orders', async (req, res) => {
 
     const { id, orderNumber } = await createOrder(data)
 
-    sendTelegram(id, orderNumber, data)
+    // Resolve branch for Telegram routing
+    let branchChatId = null
+    let branchName = null
+    if (data.branchId) {
+      const branch = await getBranchById(data.branchId).catch(() => null)
+      branchChatId = branch?.telegram_chat_id || null
+      branchName   = branch?.name || null
+    }
+
+    sendTelegram(id, orderNumber, { ...data, branchName }, branchChatId)
 
     res.status(201).json({ id, orderNumber })
   } catch (err) {
@@ -109,6 +193,7 @@ app.patch('/api/orders/:id/status', async (req, res) => {
 })
 
 // ─── Telegram Bot Webhook ────────────────────────────────
+
 app.post('/telegram-webhook', async (req, res) => {
   res.sendStatus(200)
   const update = req.body
@@ -146,7 +231,7 @@ app.post('/telegram-webhook', async (req, res) => {
       if (!orders.length) return reply('لا توجد طلبات.')
       const statusAr = { pending: '⏳', preparing: '👨‍🍳', on_the_way: '🛵', delivered: '✅', cancelled: '🚫' }
       const lines = orders.map(o =>
-        `*#${o.order_number}* — ${o.customer_name}\n📞 ${o.phone} | ${o.total} ج.م | ${statusAr[o.status] || o.status}\n${o.items.map(i => `${i.name} ×${i.quantity}`).join('، ')}`
+        `*#${o.order_number}* — ${o.customer_name}\n📞 ${o.phone} | ${o.total} ج.م | ${statusAr[o.status] || o.status}${o.branch_name ? ' | 🏪 ' + o.branch_name : ''}\n${o.items.map(i => `${i.name} ×${i.quantity}`).join('، ')}`
       ).join('\n\n')
       return reply(`📋 *آخر الطلبات*\n\n${lines}`)
     }
@@ -177,6 +262,7 @@ app.post('/telegram-webhook', async (req, res) => {
 })
 
 // ─── Customers ───────────────────────────────────────────
+
 app.get('/api/customers', async (req, res) => {
   const { limit, offset } = req.query
   res.json(await getCustomers({ limit: Number(limit) || 50, offset: Number(offset) || 0 }))
@@ -195,34 +281,9 @@ app.get('/api/customers/:id', async (req, res) => {
 })
 
 // ─── Products API ─────────────────────────────────────────
+
 app.get('/api/products', async (req, res) => {
   res.json(await getProducts())
-})
-
-app.post('/api/products', async (req, res) => {
-  try {
-    const product = await createProduct(req.body)
-    res.status(201).json(product)
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: 'خطأ في الخادم' })
-  }
-})
-
-app.put('/api/products/:id', async (req, res) => {
-  try {
-    const product = await updateProduct(Number(req.params.id), req.body)
-    if (!product) return res.status(404).json({ error: 'المنتج مش موجود' })
-    res.json(product)
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: 'خطأ في الخادم' })
-  }
-})
-
-app.delete('/api/products/:id', async (req, res) => {
-  await deleteProduct(Number(req.params.id))
-  res.json({ ok: true })
 })
 
 app.post('/api/products/seed', async (req, res) => {
@@ -321,11 +382,51 @@ app.post('/api/products/seed', async (req, res) => {
   res.json({ ok: true, inserted })
 })
 
+app.get('/api/products/branch/:branchId', async (req, res) => {
+  res.json(await getProductsForBranch(Number(req.params.branchId)))
+})
+
+app.get('/api/products/:id/branches', async (req, res) => {
+  res.json(await getProductBranches(Number(req.params.id)))
+})
+
+app.put('/api/products/:id/branches', adminAuth, async (req, res) => {
+  const { branchIds } = req.body
+  await setProductBranches(Number(req.params.id), Array.isArray(branchIds) ? branchIds : [])
+  res.json({ ok: true })
+})
+
+app.post('/api/products', async (req, res) => {
+  try {
+    const product = await createProduct(req.body)
+    res.status(201).json(product)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'خطأ في الخادم' })
+  }
+})
+
+app.put('/api/products/:id', async (req, res) => {
+  try {
+    const product = await updateProduct(Number(req.params.id), req.body)
+    if (!product) return res.status(404).json({ error: 'المنتج مش موجود' })
+    res.json(product)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'خطأ في الخادم' })
+  }
+})
+
+app.delete('/api/products/:id', async (req, res) => {
+  await deleteProduct(Number(req.params.id))
+  res.json({ ok: true })
+})
+
 // ─── Admin UI ────────────────────────────────────────────
+
 app.get('/admin', (_, res) => {
   res.sendFile(join(__dirname, 'admin.html'))
 })
-
 
 // Serve React build
 const staticDir = join(__dirname, '../docs')

@@ -6,10 +6,12 @@ import CartPage from './pages/CartPage'
 import CheckoutPage from './pages/CheckoutPage'
 import ConfirmationPage from './pages/ConfirmationPage'
 import MyOrdersPage from './pages/MyOrdersPage'
+import BranchSelectorPage from './pages/BranchSelectorPage'
 
 function App() {
   return (
     <Routes>
+      <Route path="/branch" element={<BranchSelectorPage />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<MenuPage />} />
         <Route path="menu" element={<Navigate to="/" replace />} />

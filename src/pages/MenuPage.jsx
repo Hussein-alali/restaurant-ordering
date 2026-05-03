@@ -196,16 +196,26 @@ function MenuPage() {
   const [activeCat, setActiveCat] = useState(CATS[0].id)
   const [unavailable, setUnavailable] = useState(new Set())
   const navigate = useNavigate()
+  const branch = state.selectedBranch
 
   useEffect(() => {
-    fetch('/api/products')
-      .then(r => r.ok ? r.json() : [])
-      .then(products => {
-        const names = new Set(products.filter(p => !p.available).map(p => p.name))
-        setUnavailable(names)
-      })
-      .catch(() => {})
-  }, [])
+    if (!branch) { navigate('/branch', { replace: true }); return }
+
+    Promise.all([
+      fetch('/api/products').then(r => r.ok ? r.json() : []),
+      fetch(`/api/products/branch/${branch.id}`).then(r => r.ok ? r.json() : []),
+    ]).then(([allProducts, branchProducts]) => {
+      const globallyUnavailable = new Set(allProducts.filter(p => !p.available).map(p => p.name))
+      const branchAvailableNames = new Set(branchProducts.map(p => p.name))
+      const allDbNames = new Set(allProducts.map(p => p.name))
+      // Mark as unavailable: globally off, OR exists in DB but not in branch's products
+      const hidden = new Set([
+        ...globallyUnavailable,
+        ...[...allDbNames].filter(n => !branchAvailableNames.has(n) && !globallyUnavailable.has(n)),
+      ])
+      setUnavailable(hidden)
+    }).catch(() => {})
+  }, [branch?.id])
 
   const cartCount = state.items.reduce((s, i) => s + i.quantity, 0)
   const total = calculateTotal(state.items)
@@ -241,11 +251,21 @@ function MenuPage() {
             <div style={{ ...disp, color: C.yellow, fontWeight: 800, fontSize: 18, letterSpacing: -0.3, fontStyle: 'italic' }}>
               Crepe Corner
             </div>
-            <div style={{ color: '#fff', fontSize: 11, opacity: 0.85, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span>📍</span> كفر صقر · شارع المستشفى · 01044438830
-            </div>
+            {branch ? (
+              <div style={{ color: '#fff', fontSize: 11, opacity: 0.85, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span>🏪</span>
+                <span>{branch.name}</span>
+                {branch.address && <span>· {branch.address}</span>}
+              </div>
+            ) : (
+              <div style={{ color: '#fff', fontSize: 11, opacity: 0.85, marginTop: 2 }}>Crepe Corner</div>
+            )}
           </div>
-          <WhatsAppButton phone="201044438830" />
+          {branch?.phone && <WhatsAppButton phone={branch.phone.replace(/^0/, '20')} />}
+          <button
+            onClick={() => navigate('/branch')}
+            style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 10, padding: '6px 10px', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+          >تغيير الفرع</button>
           <button
             onClick={() => navigate('/my-orders')}
             style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 10, padding: '6px 10px', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
