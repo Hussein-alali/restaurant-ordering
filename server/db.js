@@ -176,8 +176,29 @@ export async function getCustomerWithOrders(id) {
 export async function createOrder(data) {
   const orderNumber = Date.now().toString(36).toUpperCase()
   const customerId  = await upsertCustomer({ name: data.customerName, phone: data.phone, address: data.address })
-  const subtotal    = data.totalPrice
-  const deliveryFee = 15
+
+  // Server-side price verification — never trust client-supplied prices.
+  // Look up each item's current price in the DB; fall back to client price only
+  // if the product ID is not found (e.g. items from the static frontend menu file).
+  const productIds = (data.items || []).map(i => Number(i.id)).filter(id => Number.isInteger(id) && id > 0)
+  const priceMap   = new Map()
+  if (productIds.length) {
+    const { rows: prods } = await pool.query(
+      'SELECT id, COALESCE(discounted_price, original_price) AS price FROM products WHERE id = ANY($1::int[])',
+      [productIds],
+    )
+    prods.forEach(p => priceMap.set(p.id, Number(p.price)))
+  }
+
+  const verifiedItems = (data.items || []).map(item => ({
+    ...item,
+    price: priceMap.get(Number(item.id)) ?? Number(item.price),
+  }))
+
+  const subtotal    = verifiedItems.reduce((s, i) => s + Number(i.price) * Number(i.quantity), 0)
+  // Delivery fee is 0 for pickup / dine-in
+  const deliveryFee = (data.serviceType === 'استلام' || data.serviceType === 'داخل المحل') ? 0 : 15
+
   const { rows } = await pool.query(
     `INSERT INTO orders
        (order_number,customer_id,customer_name,phone,address,service_type,payment_method,
@@ -185,7 +206,7 @@ export async function createOrder(data) {
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING id`,
     [
       orderNumber, customerId, data.customerName, data.phone, data.address || null,
-      data.serviceType, data.paymentMethod || 'كاش', JSON.stringify(data.items),
+      data.serviceType, data.paymentMethod || 'كاش', JSON.stringify(verifiedItems),
       subtotal, deliveryFee, subtotal + deliveryFee,
       data.deliveryNotes || null, data.orderNote || null, data.branchId || null,
     ],

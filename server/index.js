@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import helmet from 'helmet'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { join, dirname } from 'path'
@@ -17,6 +18,10 @@ import {
 const __dirname  = dirname(fileURLToPath(import.meta.url))
 const app        = express()
 const PORT       = process.env.PORT || 3001
+
+// Trust Railway's reverse proxy so req.ip reflects the real client IP,
+// not the internal load-balancer address (fixes rate-limiter accuracy)
+app.set('trust proxy', 1)
 const TG_TOKEN   = process.env.TELEGRAM_BOT_TOKEN
 const TG_CHAT    = process.env.TELEGRAM_CHAT_ID
 const JWT_SECRET = process.env.JWT_SECRET || (() => {
@@ -28,39 +33,63 @@ const JWT_SECRET = process.env.JWT_SECRET || (() => {
 
 // ─── Security Headers ────────────────────────────────────
 
+// helmet sets HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, etc.
+// CSP is set manually below because admin.html has inline scripts.
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }))
+
 app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff')
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN')
-  res.setHeader('X-XSS-Protection', '1; mode=block')
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  // HSTS: tell browsers to always use HTTPS for 2 years (production only)
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
+  }
+  // CSP: admin.html requires unsafe-inline for its script block; sheetjs from CDN
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.sheetjs.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src 'self' fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' api.telegram.org; frame-ancestors 'none'",
+  )
+  res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()')
   next()
 })
 
-app.use(cors())
-app.use(express.json({ limit: '10mb' }))
+// CORS: restrict to our own domain — wildcard would allow any site to call our API
+const ALLOWED_ORIGINS = process.env.NODE_ENV === 'production'
+  ? ['https://restaurant-ordering-production.up.railway.app']
+  : ['http://localhost:5173', 'http://localhost:3001', 'http://127.0.0.1:5173']
 
-// ─── Rate Limiting (login brute-force protection) ────────
+app.use(cors({
+  origin: (origin, cb) => (!origin || ALLOWED_ORIGINS.includes(origin) ? cb(null, true) : cb(new Error('Not allowed by CORS'))),
+  credentials: true,
+}))
 
-const loginAttempts = new Map() // ip → { count, resetAt }
-setInterval(() => {
-  const now = Date.now()
-  for (const [ip, rec] of loginAttempts) { if (now > rec.resetAt) loginAttempts.delete(ip) }
-}, 60_000)
+// 100 KB is more than enough for any legitimate order payload
+app.use(express.json({ limit: '100kb' }))
 
-function rateLimitLogin(req, res, next) {
-  const ip  = req.ip || req.connection.remoteAddress || 'unknown'
-  const now = Date.now()
-  const rec = loginAttempts.get(ip) || { count: 0, resetAt: now + 15 * 60_000 }
-  if (now > rec.resetAt) { rec.count = 0; rec.resetAt = now + 15 * 60_000 }
-  if (rec.count >= 10) {
-    const mins = Math.ceil((rec.resetAt - now) / 60_000)
-    return res.status(429).json({ error: `كثير من المحاولات. حاول بعد ${mins} دقيقة` })
+// ─── Rate Limiting ───────────────────────────────────────
+
+function makeRateLimiter({ windowMs, max, message }) {
+  const store = new Map()
+  setInterval(() => { const now = Date.now(); for (const [k, r] of store) if (now > r.resetAt) store.delete(k) }, 60_000)
+  return (req, res, next) => {
+    const ip  = req.ip || 'unknown'
+    const now = Date.now()
+    const rec = store.get(ip) || { count: 0, resetAt: now + windowMs }
+    if (now > rec.resetAt) { rec.count = 0; rec.resetAt = now + windowMs }
+    if (rec.count >= max) {
+      const mins = Math.ceil((rec.resetAt - now) / 60_000)
+      return res.status(429).json({ error: message(mins) })
+    }
+    rec.count++
+    store.set(ip, rec)
+    req._rateLimitStore = store
+    req._rateLimitIp    = ip
+    next()
   }
-  rec.count++
-  loginAttempts.set(ip, rec)
-  req._loginIp = ip
-  next()
 }
+
+// 10 login attempts per 15 min per IP (brute-force protection)
+const rateLimitLogin   = makeRateLimiter({ windowMs: 15 * 60_000, max: 10,  message: m => `كثير من المحاولات. حاول بعد ${m} دقيقة` })
+// 30 lookups per minute per IP (customer order-history scraping protection)
+const rateLimitByPhone = makeRateLimiter({ windowMs: 60_000,       max: 30,  message: () => 'كثير من المحاولات' })
 
 // ─── Auth Middleware ──────────────────────────────────────
 
@@ -150,7 +179,7 @@ app.post('/api/admin/login', rateLimitLogin, async (req, res) => {
   }
 
   // Reset rate limit on success
-  if (req._loginIp) loginAttempts.delete(req._loginIp)
+  if (req._rateLimitStore && req._rateLimitIp) req._rateLimitStore.delete(req._rateLimitIp)
 
   const token = jwt.sign(
     { id: admin.id, email: admin.email, username: admin.username, role: admin.role, branchId: admin.branch_id },
@@ -182,11 +211,21 @@ app.get('/api/products/:id/branches', async (req, res) => {
 })
 
 // ─── Orders: single (public — customer tracking) ─────────
+// Returns only tracking fields — no customer PII (name/phone/address) to prevent
+// BOLA: sequential numeric IDs are guessable; a full dump would leak all customer data
 
 app.get('/api/orders/:id', async (req, res) => {
   const order = await getOrderById(Number(req.params.id))
   if (!order) return res.status(404).json({ error: 'الطلب مش موجود' })
-  res.json(order)
+  res.json({
+    id:           order.id,
+    order_number: order.order_number,
+    status:       order.status,
+    items:        order.items,
+    total:        order.total,
+    service_type: order.service_type,
+    created_at:   order.created_at,
+  })
 })
 
 // ─── Orders: create (public) ─────────────────────────────
@@ -214,7 +253,7 @@ app.post('/api/orders', async (req, res) => {
 
 // ─── Customers: by-phone (public — customer "My Orders") ─
 
-app.get('/api/customers/by-phone/:phone', async (req, res) => {
+app.get('/api/customers/by-phone/:phone', rateLimitByPhone, async (req, res) => {
   const customer = await getCustomerByPhone(req.params.phone)
   if (!customer) return res.status(404).json({ error: 'العميل مش موجود' })
   res.json(customer)
@@ -227,10 +266,13 @@ app.post('/telegram-webhook', async (req, res) => {
   const update = req.body
   const STATUS_AR = { preparing: '👨‍🍳 جاري التحضير', on_the_way: '🛵 في الطريق', delivered: '✅ تم التوصيل', cancelled: '🚫 ملغي' }
 
+  const VALID_TG_STATUSES = new Set(['preparing', 'on_the_way', 'delivered', 'cancelled'])
+
   if (update.callback_query) {
     const cbq = update.callback_query
     const [, orderId, newStatus] = cbq.data.split(':')
-    if (orderId && newStatus) {
+    // Whitelist status values — never pass raw callback_data to the DB
+    if (orderId && VALID_TG_STATUSES.has(newStatus)) {
       await updateOrderStatus(Number(orderId), newStatus).catch(() => {})
       await fetch(`https://api.telegram.org/bot${TG_TOKEN}/answerCallbackQuery`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -372,9 +414,13 @@ app.delete('/api/branches/:id', adminAuth, superAdminOnly, async (req, res) => {
 
 app.get('/api/orders', adminAuth, branchScope, async (req, res) => {
   const { limit, offset, status } = req.query
-  // branch_admin sees only their branch; super_admin can filter by branchId param
   const branchId = req.scopedBranchId ?? (req.query.branchId ? Number(req.query.branchId) : undefined)
-  res.json(await getOrders({ limit: Number(limit) || 50, offset: Number(offset) || 0, status, branchId }))
+  res.json(await getOrders({
+    limit:  Math.min(Math.max(Number(limit)  || 50, 1), 500), // cap at 500
+    offset: Math.max(Number(offset) || 0, 0),
+    status,
+    branchId,
+  }))
 })
 
 // ─── Orders: status update (admin — branch scoped) ───────
