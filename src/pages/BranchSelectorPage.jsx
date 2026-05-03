@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import logoSrc from '/logo.png'
+import headerBg from '/branch-header-bg.png'
+import bodyBg from '/branch-body-bg.png'
 
 const C = {
   red:        '#a8160c',
@@ -39,10 +41,19 @@ export default function BranchSelectorPage() {
   }
 
   return (
-    <div dir="rtl" style={{ ...ar, background: C.bg, minHeight: '100vh' }}>
+    <div dir="rtl" style={{
+      ...ar,
+      minHeight: '100vh',
+      backgroundImage: `url(${bodyBg})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
+    }}>
       {/* Header */}
       <div style={{
-        background: `linear-gradient(180deg, ${C.redDark} 0%, ${C.red} 100%)`,
+        backgroundImage: `url(${headerBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
         padding: '54px 18px 28px',
         textAlign: 'center',
       }}>
@@ -71,7 +82,7 @@ export default function BranchSelectorPage() {
 
         {!loading && !branches.length && (
           <div style={{
-            background: C.card, border: `1px solid ${C.rule}`, borderRadius: 14,
+            background: 'rgba(255,255,255,0.92)', border: `1px solid ${C.rule}`, borderRadius: 14,
             padding: '24px', textAlign: 'center',
           }}>
             <div style={{ fontSize: 32, marginBottom: 12 }}>🏪</div>
@@ -102,7 +113,7 @@ export default function BranchSelectorPage() {
               key={branch.id}
               onClick={() => selectBranch(branch)}
               style={{
-                background: C.card,
+                background: 'rgba(255,255,255,0.92)',
                 border: `1.5px solid ${C.rule}`,
                 borderRadius: 16,
                 padding: '18px 18px',
