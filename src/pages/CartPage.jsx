@@ -138,37 +138,11 @@ function CartPage() {
   const { state, dispatch } = useCart()
   const navigate = useNavigate()
   const [promoCode, setPromoCode] = useState('')
-  const [promoOpen, setPromoOpen] = useState(!!state.appliedOffer)
-  const [promoError, setPromoError] = useState('')
-  const [promoLoading, setPromoLoading] = useState(false)
+  const [promoOpen, setPromoOpen] = useState(false)
 
-  const appliedOffer = state.appliedOffer
   const total = calculateTotal(state.items)
   const itemCount = state.items.reduce((s, i) => s + i.quantity, 0)
   const delivery = state.serviceType === 'توصيل' ? 15 : 0
-  const discountAmt = appliedOffer ? Math.round(total * appliedOffer.discount_percent / 100) : 0
-  const grandTotal = total - discountAmt + delivery
-
-  const applyPromo = async () => {
-    if (!promoCode.trim()) return
-    setPromoLoading(true)
-    setPromoError('')
-    try {
-      const r = await fetch(`/api/offers/code/${encodeURIComponent(promoCode.trim())}`)
-      if (!r.ok) {
-        const d = await r.json().catch(() => ({}))
-        setPromoError(d.error || 'الكود غير صحيح')
-        dispatch({ type: 'SET_OFFER', payload: null })
-      } else {
-        const offer = await r.json()
-        dispatch({ type: 'SET_OFFER', payload: offer })
-        setPromoError('')
-      }
-    } catch {
-      setPromoError('حصل خطأ، حاول تاني')
-    }
-    setPromoLoading(false)
-  }
 
   const update = (id, delta) => {
     const item = state.items.find(i => i.id === id)
@@ -396,36 +370,20 @@ function CartPage() {
             <span style={{ ...ar, flex: 1, fontSize: 13, color: C.redDeep, fontWeight: 700, textAlign: 'right' }}>أضف كود الخصم</span>
           </button>
         ) : (
-          <div>
-            <div style={{
-              background: appliedOffer ? '#f0fdf4' : C.yellowSoft,
-              border: `1px solid ${appliedOffer ? '#86efac' : C.yellow}`, borderRadius: 12,
-              padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10,
-            }}>
-              <span style={{ fontSize: 16 }}>🎟</span>
-              <input
-                value={promoCode}
-                onChange={e => { setPromoCode(e.target.value); dispatch({ type: 'SET_OFFER', payload: null }); setPromoError('') }}
-                onKeyDown={e => e.key === 'Enter' && applyPromo()}
-                placeholder="أدخل الكود"
-                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: C.ink, fontFamily: 'inherit', textAlign: 'right' }}
-              />
-              <button
-                onClick={applyPromo}
-                disabled={promoLoading}
-                style={{ fontSize: 13, fontWeight: 800, color: appliedOffer ? '#15803d' : C.red, background: 'none', border: 'none', cursor: 'pointer', opacity: promoLoading ? 0.5 : 1 }}
-              >
-                {promoLoading ? '…' : appliedOffer ? '✓ مُطبَّق' : 'تطبيق'}
-              </button>
-            </div>
-            {promoError && (
-              <div style={{ fontSize: 12, color: C.red, fontWeight: 700, marginTop: 5, paddingRight: 4 }}>{promoError}</div>
-            )}
-            {appliedOffer && (
-              <div style={{ fontSize: 12, color: '#15803d', fontWeight: 700, marginTop: 5, paddingRight: 4 }}>
-                🎉 {appliedOffer.title} · خصم {appliedOffer.discount_percent}%
-              </div>
-            )}
+          <div style={{
+            background: C.yellowSoft, border: `1px solid ${C.yellow}`, borderRadius: 12,
+            padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <span style={{ fontSize: 16 }}>🎟</span>
+            <input
+              value={promoCode}
+              onChange={e => setPromoCode(e.target.value)}
+              placeholder="أدخل الكود"
+              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: C.ink, fontFamily: 'inherit', textAlign: 'right' }}
+            />
+            <button style={{ fontSize: 13, fontWeight: 800, color: C.red, background: 'none', border: 'none', cursor: 'pointer' }}>
+              تطبيق
+            </button>
           </div>
         )}
       </div>
@@ -458,21 +416,17 @@ function CartPage() {
       {/* Summary */}
       <div style={{ padding: '14px 18px 140px' }}>
         <div style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 14, padding: '14px 16px' }}>
-          {[
-            ['المجموع الفرعي', egp(total)],
-            ...(delivery > 0 ? [['التوصيل', egp(delivery)]] : []),
-            ...(discountAmt > 0 ? [['خصم', `- ${egp(discountAmt)}`]] : []),
-          ].map(([k, v]) => (
+          {[['المجموع الفرعي', egp(total)], ...(delivery > 0 ? [['التوصيل', egp(delivery)]] : [])].map(([k, v]) => (
             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontSize: 13 }}>
-              <span style={{ color: k === 'خصم' ? '#15803d' : C.body, fontWeight: 600 }}>{k}</span>
-              <span style={{ ...disp, color: k === 'خصم' ? '#15803d' : C.ink, fontWeight: 700 }}>{v}</span>
+              <span style={{ color: C.body, fontWeight: 600 }}>{k}</span>
+              <span style={{ ...disp, color: C.ink, fontWeight: 700 }}>{v}</span>
             </div>
           ))}
           <div style={{ height: 1, background: C.rule, margin: '10px 0' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <span style={{ fontSize: 15, fontWeight: 900, color: C.ink }}>الإجمالي</span>
             <span style={{ ...disp, fontSize: 26, fontWeight: 900, color: C.red, letterSpacing: -0.5, fontStyle: 'italic' }}>
-              {egp(grandTotal)}
+              {egp(total + delivery)}
             </span>
           </div>
         </div>
@@ -493,7 +447,7 @@ function CartPage() {
           <div>
             <div style={{ fontSize: 11, color: '#fde6a8', fontWeight: 700 }}>الإجمالي · {arNum(itemCount)} صنف</div>
             <div style={{ ...disp, fontSize: 18, fontWeight: 900, fontStyle: 'italic', marginTop: 1 }}>
-              {egp(grandTotal)}
+              {egp(total + delivery)}
             </div>
           </div>
           <div style={{ fontSize: 14, fontWeight: 900 }}>تأكيد الطلب ←</div>

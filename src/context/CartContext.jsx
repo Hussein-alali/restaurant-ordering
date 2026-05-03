@@ -24,7 +24,6 @@ function buildInitialState() {
     items: [],
     serviceType: 'توصيل',
     paymentMethod: 'كاش',
-    appliedOffer: null,
     selectedBranch: loadBranch(),
     customer: {
       name:          saved.name || '',
@@ -73,10 +72,8 @@ function cartReducer(state, action) {
           item.id === action.payload.id ? { ...item, quantity: action.payload.quantity } : item
         ),
       }
-    case 'SET_OFFER':
-      return { ...state, appliedOffer: action.payload }
     case 'CLEAR_CART':
-      return { ...state, items: [], appliedOffer: null, lastOrder: state.lastOrder }
+      return { ...state, items: [], lastOrder: state.lastOrder }
     case 'SET_SERVICE_TYPE':
       return { ...state, serviceType: action.payload }
     case 'SET_PAYMENT_METHOD':
@@ -149,7 +146,6 @@ export function formatPayload(cartState) {
       price:    item.price,
     })),
     totalPrice:    calculateTotal(cartState.items),
-    discountCode:  cartState.appliedOffer?.discount_code || null,
     deliveryNotes: customer.deliveryNotes,
     orderNote:     customer.orderNote || null,
     branchId:      selectedBranch?.id || null,
