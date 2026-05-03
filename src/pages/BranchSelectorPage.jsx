@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import logoSrc from '/logo.png'
-import headerBg from '/branch-header-bg.png'
-import bodyBg from '/branch-body-bg.png'
+import bgLogoSrc from '/background-logo.png'
 
 const C = {
   red:        '#a8160c',
@@ -41,38 +40,50 @@ export default function BranchSelectorPage() {
   }
 
   return (
-    <div dir="rtl" style={{
-      ...ar,
-      minHeight: '100vh',
-      backgroundImage: `url(${bodyBg})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundAttachment: 'fixed',
-    }}>
-      {/* Header */}
+    <div dir="rtl" style={{ background: C.bg, minHeight: '100vh', ...ar }}>
+      {/* Header — identical to MenuPage */}
       <div style={{
-        backgroundImage: `url(${headerBg})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        padding: '54px 18px 28px',
-        textAlign: 'center',
+        background: `linear-gradient(180deg, ${C.redDark} 0%, ${C.red} 100%)`,
+        padding: '54px 18px 18px',
+        position: 'relative', overflow: 'hidden',
       }}>
-        <img src={logoSrc} alt="Crepe Corner" style={{ width: 72, height: 72, borderRadius: 36, objectFit: 'cover', marginBottom: 12 }} />
-        <div style={{ ...disp, color: C.yellow, fontWeight: 800, fontSize: 22, fontStyle: 'italic', marginBottom: 4 }}>
-          Crepe Corner
+        {/* Background watermark */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+          <img src={bgLogoSrc} alt="" style={{
+            position: 'absolute', left: -20, top: '50%', transform: 'translateY(-50%)',
+            width: 240, height: 240, objectFit: 'contain', opacity: 0.12,
+          }} />
         </div>
-        <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>
-          اختار الفرع الأقرب ليك
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
+          <img src={logoSrc} alt="Crepe Corner" style={{ width: 64, height: 64, borderRadius: 32, objectFit: 'cover', flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ ...disp, color: C.yellow, fontWeight: 800, fontSize: 18, letterSpacing: -0.3, fontStyle: 'italic' }}>
+              Crepe Corner
+            </div>
+            <div style={{ color: '#fff', fontSize: 11, opacity: 0.85, marginTop: 2 }}>
+              اختار الفرع الأقرب ليك
+            </div>
+          </div>
         </div>
       </div>
 
-      <div style={{ padding: '24px 18px', maxWidth: 480, margin: '0 auto' }}>
-        <div style={{ ...disp, fontSize: 20, fontWeight: 900, color: C.ink, marginBottom: 6 }}>
-          اختار فرعك
+      {/* Body */}
+      <div style={{ padding: '20px 18px', maxWidth: 480, margin: '0 auto' }}>
+        {/* Section header — same ribbon style as MenuPage */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{
+            display: 'inline-block', background: C.red, color: '#fff',
+            padding: '10px 22px 10px 28px',
+            ...ar, fontWeight: 800, fontSize: 18,
+            clipPath: 'polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%)',
+          }}>
+            الفروع
+          </div>
+          {!loading && branches.length > 0 && (
+            <div style={{ fontSize: 11, color: C.body, fontWeight: 600 }}>{branches.length} فرع</div>
+          )}
         </div>
-        <p style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>
-          المنتجات المعروضة هتكون بتاعت الفرع اللي هتختاره
-        </p>
 
         {loading && (
           <div style={{ textAlign: 'center', padding: '40px 0', color: C.muted, fontSize: 14 }}>
@@ -82,7 +93,7 @@ export default function BranchSelectorPage() {
 
         {!loading && !branches.length && (
           <div style={{
-            background: 'rgba(255,255,255,0.92)', border: `1px solid ${C.rule}`, borderRadius: 14,
+            background: C.card, border: `1px solid ${C.rule}`, borderRadius: 14,
             padding: '24px', textAlign: 'center',
           }}>
             <div style={{ fontSize: 32, marginBottom: 12 }}>🏪</div>
@@ -93,10 +104,7 @@ export default function BranchSelectorPage() {
               يمكنك تصفح القائمة الكاملة
             </p>
             <button
-              onClick={() => {
-                dispatch({ type: 'SET_BRANCH', payload: null })
-                navigate('/')
-              }}
+              onClick={() => { dispatch({ type: 'SET_BRANCH', payload: null }); navigate('/') }}
               style={{
                 background: C.red, color: '#fff', border: 'none', borderRadius: 12,
                 padding: '12px 24px', fontSize: 14, fontWeight: 800, cursor: 'pointer',
@@ -107,47 +115,49 @@ export default function BranchSelectorPage() {
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {branches.map(branch => (
-            <button
+            <div
               key={branch.id}
               onClick={() => selectBranch(branch)}
               style={{
-                background: 'rgba(255,255,255,0.92)',
-                border: `1.5px solid ${C.rule}`,
-                borderRadius: 16,
-                padding: '18px 18px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 16,
+                background: C.card, borderRadius: 14, padding: 10,
+                border: `1px solid ${C.rule}`,
+                display: 'flex', gap: 12, alignItems: 'center',
                 cursor: 'pointer',
-                textAlign: 'right',
-                transition: 'border-color .15s, box-shadow .15s',
-                width: '100%',
               }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = C.red; e.currentTarget.style.boxShadow = '0 4px 16px rgba(168,22,12,.14)' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = C.rule; e.currentTarget.style.boxShadow = 'none' }}
             >
               <div style={{
-                width: 48, height: 48, borderRadius: 14, background: C.red,
+                width: 76, height: 76, flexShrink: 0, borderRadius: 11,
+                background: `linear-gradient(135deg, ${C.redDark} 0%, ${C.red} 100%)`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 22, flexShrink: 0,
+                fontSize: 32,
               }}>
                 🏪
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ ...disp, fontSize: 16, fontWeight: 900, color: C.ink }}>{branch.name}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ ...ar, fontSize: 15, fontWeight: 800, color: C.ink, lineHeight: 1.25 }}>
+                  {branch.name}
+                </div>
                 {branch.address && (
-                  <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>📍 {branch.address}</div>
+                  <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>📍 {branch.address}</div>
                 )}
                 {branch.phone && (
                   <div style={{ fontSize: 12, color: C.body, marginTop: 2 }}>📞 {branch.phone}</div>
                 )}
               </div>
-              <svg width="16" height="16" viewBox="0 0 16 16" style={{ flexShrink: 0 }}>
-                <path d="M10 4l-4 4 4 4" stroke={C.muted} strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
+              <div style={{ flexShrink: 0 }}>
+                <div style={{
+                  width: 34, height: 34, borderRadius: 10, background: C.ink, color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: 'none',
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 14 14">
+                    <path d="M9 4L5 7l4 3" stroke="#fff" strokeWidth="1.9" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </div>
