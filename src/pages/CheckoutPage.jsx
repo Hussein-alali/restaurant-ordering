@@ -59,6 +59,9 @@ function CheckoutPage() {
   const delivery = 15
   const serviceType = state.serviceType
   const isDelivery = serviceType === 'توصيل'
+  const appliedOffer = state.appliedOffer
+  const discountAmt = appliedOffer ? Math.round(total * appliedOffer.discount_percent / 100) : 0
+  const grandTotal = total - discountAmt + (isDelivery ? delivery : 0)
 
   const updateCustomer = (field, value) => {
     dispatch({ type: 'SET_CUSTOMER', payload: { [field]: value } })
@@ -215,10 +218,14 @@ function CheckoutPage() {
                 </div>
               ))}
               <div style={{ height: 1, background: C.rule, margin: '10px 0' }} />
-              {[['التوصيل', egp(delivery)], ['الإجمالي', egp(total + delivery)]].map(([k, v], i) => (
+              {[
+                ...(isDelivery ? [['التوصيل', egp(delivery)]] : []),
+                ...(discountAmt > 0 ? [['خصم', `- ${egp(discountAmt)}`]] : []),
+                ['الإجمالي', egp(grandTotal)],
+              ].map(([k, v], i, arr) => (
                 <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                  <span style={{ fontSize: i === 1 ? 15 : 13, fontWeight: i === 1 ? 900 : 600, color: C.ink }}>{k}</span>
-                  <span style={{ ...disp, fontSize: i === 1 ? 20 : 13, fontWeight: i === 1 ? 900 : 700, color: i === 1 ? C.red : C.ink, fontStyle: 'italic' }}>{v}</span>
+                  <span style={{ fontSize: i === arr.length-1 ? 15 : 13, fontWeight: i === arr.length-1 ? 900 : 600, color: k === 'خصم' ? '#15803d' : C.ink }}>{k}</span>
+                  <span style={{ ...disp, fontSize: i === arr.length-1 ? 20 : 13, fontWeight: i === arr.length-1 ? 900 : 700, color: i === arr.length-1 ? C.red : k === 'خصم' ? '#15803d' : C.ink, fontStyle: 'italic' }}>{v}</span>
                 </div>
               ))}
             </div>
@@ -259,7 +266,7 @@ function CheckoutPage() {
           }}
         >
           <span style={{ fontSize: 11, color: '#fde6a8', fontWeight: 700 }}>
-            {step === 1 ? `${state.items.reduce((s, i) => s + i.quantity, 0)} صنف` : egp(total + delivery)}
+            {step === 1 ? `${state.items.reduce((s, i) => s + i.quantity, 0)} صنف` : egp(grandTotal)}
           </span>
           <span style={{ ...disp, fontSize: 16, fontWeight: 900, fontStyle: 'italic' }}>
             {status === 'loading' ? '…' : step === 1 ? 'متابعة ←' : 'تأكيد الطلب ←'}

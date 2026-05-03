@@ -142,6 +142,12 @@ await pool.query(`
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='admin_users' AND column_name='branch_id') THEN
       ALTER TABLE admin_users ADD COLUMN branch_id INTEGER REFERENCES branches(id) ON DELETE SET NULL;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='offers' AND column_name='discount_code') THEN
+      ALTER TABLE offers ADD COLUMN discount_code TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='offers' AND column_name='discount_percent') THEN
+      ALTER TABLE offers ADD COLUMN discount_percent INTEGER NOT NULL DEFAULT 0;
+    END IF;
   END $$;
 `)
 
@@ -464,18 +470,27 @@ export async function getActiveOffers() {
   return attachOfferItems(rows)
 }
 
-export async function createOffer({ title, description }) {
+export async function getOfferByCode(code) {
   const { rows } = await pool.query(
-    'INSERT INTO offers (title, description) VALUES ($1,$2) RETURNING *',
-    [title.trim(), description || null],
+    `SELECT * FROM offers WHERE LOWER(discount_code)=LOWER($1) AND is_active=true`,
+    [code.trim()],
+  )
+  if (!rows[0]) return null
+  return attachOfferItems([rows[0]]).then(a => a[0])
+}
+
+export async function createOffer({ title, description, discount_code, discount_percent }) {
+  const { rows } = await pool.query(
+    'INSERT INTO offers (title, description, discount_code, discount_percent) VALUES ($1,$2,$3,$4) RETURNING *',
+    [title.trim(), description || null, discount_code?.trim() || null, discount_percent || 0],
   )
   return rows[0]
 }
 
-export async function updateOffer(id, { title, description, is_active }) {
+export async function updateOffer(id, { title, description, is_active, discount_code, discount_percent }) {
   const { rows } = await pool.query(
-    'UPDATE offers SET title=$1, description=$2, is_active=$3 WHERE id=$4 RETURNING *',
-    [title.trim(), description || null, is_active, id],
+    'UPDATE offers SET title=$1, description=$2, is_active=$3, discount_code=$4, discount_percent=$5 WHERE id=$6 RETURNING *',
+    [title.trim(), description || null, is_active, discount_code?.trim() || null, discount_percent ?? 0, id],
   )
   return rows[0] || null
 }

@@ -362,6 +362,10 @@ select:focus{border-color:#a8160c;outline:none;box-shadow:0 0 0 3px rgba(168,22,
       <input type="hidden" id="of-id">
       <div class="fg2"><label>عنوان العرض *</label><input type="text" id="of-title" required placeholder="مثال: تخفيض ٢٠٪ على الكريب"></div>
       <div class="fg2"><label>تفاصيل <span style="font-size:11px;color:#9a8674;font-weight:400">— اختياري</span></label><input type="text" id="of-desc" placeholder="وصف إضافي للعرض"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="fg2" style="margin:0"><label>كود الخصم <span style="font-size:11px;color:#9a8674;font-weight:400">— اختياري</span></label><input type="text" id="of-code" placeholder="مثال: SUMMER20" style="text-transform:uppercase"></div>
+        <div class="fg2" style="margin:0"><label>نسبة الخصم %</label><input type="number" id="of-percent" min="0" max="100" placeholder="0" value="0"></div>
+      </div>
       <div class="fg2" style="display:flex;align-items:center;gap:10px">
         <label class="toggle"><input type="checkbox" id="of-active" checked><span class="toggle-track"></span></label>
         <label for="of-active" style="font-size:13px;font-weight:700;color:#5b4636;cursor:pointer">نشط الآن</label>
@@ -1123,6 +1127,7 @@ function renderOffers(){
         <div style="flex:1;min-width:0">
           <div style="font-size:15px;font-weight:800;color:#1a0e08">${esc(o.title)}</div>
           ${o.description?`<div style="font-size:12px;color:#9a8674;margin-top:2px">${esc(o.description)}</div>`:''}
+          ${o.discount_code?`<div style="margin-top:3px;display:inline-flex;align-items:center;gap:5px;background:#fde6a8;border:1px solid #f4b528;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:800;color:#7a0d05">🎟 ${esc(o.discount_code)} · ${arN(o.discount_percent)}%</div>`:''}
           <div style="font-size:11px;color:#9a8674;margin-top:3px">${arN(items.length)} صنف</div>
           ${itemsHtml}
           <div style="margin-top:10px">
@@ -1194,6 +1199,8 @@ function openOfferModal(id){
   document.getElementById('of-id').value=o?o.id:''
   document.getElementById('of-title').value=o?o.title:''
   document.getElementById('of-desc').value=o?o.description||'':''
+  document.getElementById('of-code').value=o?o.discount_code||'':''
+  document.getElementById('of-percent').value=o?o.discount_percent||0:0
   document.getElementById('of-active').checked=o?o.is_active:true
   document.getElementById('of-err').textContent=''
   document.getElementById('of-prod-search').value=''
@@ -1209,13 +1216,15 @@ async function saveOffer(e){
   const id=document.getElementById('of-id').value
   const title=document.getElementById('of-title').value.trim()
   const description=document.getElementById('of-desc').value.trim()
+  const discount_code=document.getElementById('of-code').value.trim().toUpperCase()||null
+  const discount_percent=parseInt(document.getElementById('of-percent').value)||0
   const is_active=document.getElementById('of-active').checked
   const items=getSelectedOfferProductIds()
   if(!title){document.getElementById('of-err').textContent='عنوان العرض مطلوب';return}
   const r=await api(id?`/api/offers/${id}`:'/api/offers',{
     method:id?'PUT':'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({title,description,is_active,items}),
+    body:JSON.stringify({title,description,discount_code,discount_percent,is_active,items}),
   })
   if(!r.ok){const d=await r.json().catch(()=>({}));document.getElementById('of-err').textContent=d.error||'حصل خطأ';return}
   closeModal('m-offer')
@@ -1227,7 +1236,7 @@ async function toggleOffer(id, isActive){
   const o=allOffers.find(x=>x.id===id)
   if(!o) return
   const items=(o.items||[]).map(i=>i.id)
-  await api(`/api/offers/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:o.title,description:o.description,is_active:isActive,items})})
+  await api(`/api/offers/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:o.title,description:o.description,discount_code:o.discount_code,discount_percent:o.discount_percent,is_active:isActive,items})})
   o.is_active=isActive
   renderOffers()
 }
