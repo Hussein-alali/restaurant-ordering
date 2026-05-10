@@ -49,7 +49,7 @@ app.use((req, res, next) => {
   // CSP: admin.html requires unsafe-inline for its script block; sheetjs from CDN
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.sheetjs.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src 'self' fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' api.telegram.org; frame-ancestors 'none'",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.sheetjs.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src 'self' fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' api.telegram.org https://fonts.googleapis.com https://fonts.gstatic.com; frame-ancestors 'none'",
   )
   res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()')
   next()

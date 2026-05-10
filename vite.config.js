@@ -36,6 +36,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        navigateFallbackDenylist: [/^\/admin/],
         globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,woff,woff2}'],
         runtimeCaching: [
           {
