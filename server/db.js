@@ -269,11 +269,13 @@ export async function createOrder(data) {
   return { id: rows[0].id, orderNumber }
 }
 
-export async function getOrders({ limit = 50, offset = 0, status, branchId } = {}) {
+export async function getOrders({ limit = 50, offset = 0, status, branchId, dateFrom, dateTo } = {}) {
   const params = []
   const where  = []
   if (status)   { params.push(status);   where.push(`o.status = $${params.length}`) }
   if (branchId) { params.push(branchId); where.push(`o.branch_id = $${params.length}`) }
+  if (dateFrom) { params.push(dateFrom); where.push(`o.created_at >= $${params.length}::date`) }
+  if (dateTo)   { params.push(dateTo);   where.push(`o.created_at < ($${params.length}::date + interval '1 day')`) }
   const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : ''
   params.push(limit, offset)
   const { rows } = await pool.query(

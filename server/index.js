@@ -3,8 +3,10 @@ import cors from 'cors'
 import helmet from 'helmet'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
-import { join, dirname } from 'path'
+import multer from 'multer'
+import { join, dirname, extname } from 'path'
 import { fileURLToPath } from 'url'
+import { existsSync, mkdirSync } from 'fs'
 import {
   createOrder, getOrders, getOrderById, updateOrderStatus,
   getCustomers, getCustomerWithOrders, getCustomerByPhone,
@@ -22,6 +24,26 @@ import {
 const __dirname  = dirname(fileURLToPath(import.meta.url))
 const app        = express()
 const PORT       = process.env.PORT || 3001
+
+// ─── Image upload setup ───────────────────────────────────────────────────────
+const uploadsDir = join(__dirname, '../public/uploads')
+if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true })
+
+const storage = multer.diskStorage({
+  destination: (_, __, cb) => cb(null, uploadsDir),
+  filename:    (_, file, cb) => {
+    const ext = extname(file.originalname).toLowerCase() || '.jpg'
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`)
+  },
+})
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter: (_, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true)
+    else cb(new Error('الملف يجب أن يكون صورة'))
+  },
+})
 
 // Trust Railway's reverse proxy so req.ip reflects the real client IP,
 // not the internal load-balancer address (fixes rate-limiter accuracy)
@@ -425,13 +447,15 @@ app.delete('/api/branches/:id', adminAuth, superAdminOnly, async (req, res) => {
 // ─── Orders: list (admin — branch scoped) ────────────────
 
 app.get('/api/orders', adminAuth, branchScope, async (req, res) => {
-  const { limit, offset, status } = req.query
+  const { limit, offset, status, dateFrom, dateTo } = req.query
   const branchId = req.scopedBranchId ?? (req.query.branchId ? Number(req.query.branchId) : undefined)
   res.json(await getOrders({
     limit:  Math.min(Math.max(Number(limit)  || 50, 1), 500), // cap at 500
     offset: Math.max(Number(offset) || 0, 0),
     status,
     branchId,
+    dateFrom: dateFrom || undefined,
+    dateTo:   dateTo   || undefined,
   }))
 })
 
@@ -739,6 +763,18 @@ app.put('/api/settings', adminAuth, superAdminOnly, async (req, res) => {
 })
 
 // ─── Admin UI ────────────────────────────────────────────
+
+// ─── Image upload (admin only) ───────────────────────────────────────────────
+app.post('/api/upload', adminAuth, upload.single('image'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'لم يتم رفع أي صورة' })
+  const host = process.env.BASE_URL ||
+    `${req.protocol}://${req.get('host')}`
+  const url = `${host}/uploads/${req.file.filename}`
+  res.json({ url })
+})
+
+// Serve uploaded images
+app.use('/uploads', express.static(uploadsDir))
 
 app.get('/admin', (_, res) => res.sendFile(join(__dirname, 'admin.html')))
 
