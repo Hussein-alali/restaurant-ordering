@@ -98,7 +98,7 @@ const corsOptions = {
 }
 
 // Handle preflight OPTIONS for all routes BEFORE any auth middleware
-app.options('*', cors(corsOptions))
+app.options(/.*/, cors(corsOptions))
 app.use(cors(corsOptions))
 
 // 100 KB is more than enough for any legitimate order payload
