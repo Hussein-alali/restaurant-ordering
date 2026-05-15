@@ -90,10 +90,16 @@ const isAllowedOrigin = (origin) => {
   return false
 }
 
-app.use(cors({
+const corsOptions = {
   origin: (origin, cb) => (isAllowedOrigin(origin) ? cb(null, true) : cb(new Error('Not allowed by CORS'))),
   credentials: true,
-}))
+  methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}
+
+// Handle preflight OPTIONS for all routes BEFORE any auth middleware
+app.options('*', cors(corsOptions))
+app.use(cors(corsOptions))
 
 // 100 KB is more than enough for any legitimate order payload
 app.use(express.json({ limit: '100kb' }))
