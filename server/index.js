@@ -60,8 +60,16 @@ const ALLOWED_ORIGINS = process.env.NODE_ENV === 'production'
   ? ['https://restaurant-ordering-production.up.railway.app']
   : ['http://localhost:5173', 'http://localhost:3001', 'http://127.0.0.1:5173']
 
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true
+  if (ALLOWED_ORIGINS.includes(origin)) return true
+  // Allow Flutter web dev server on any localhost port
+  if (/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) return true
+  return false
+}
+
 app.use(cors({
-  origin: (origin, cb) => (!origin || ALLOWED_ORIGINS.includes(origin) ? cb(null, true) : cb(new Error('Not allowed by CORS'))),
+  origin: (origin, cb) => (isAllowedOrigin(origin) ? cb(null, true) : cb(new Error('Not allowed by CORS'))),
   credentials: true,
 }))
 
