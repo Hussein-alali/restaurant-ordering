@@ -749,7 +749,7 @@ app.patch('/api/branch-sections', adminAuth, async (req, res) => {
   const { branch_id, section_id, is_available } = req.body
   if (!branch_id || !section_id || typeof is_available !== 'boolean')
     return res.status(400).json({ error: 'invalid body' })
-  if (req.admin.role === 'branch_admin' && req.admin.branch_id !== Number(branch_id))
+  if (req.admin.role === 'branch_admin' && req.admin.branchId !== Number(branch_id))
     return res.status(403).json({ error: 'forbidden' })
   await updateBranchSection(Number(branch_id), Number(section_id), is_available)
   res.json({ ok: true })
@@ -763,7 +763,7 @@ app.get('/api/settings', async (req, res) => {
 
 app.put('/api/settings', adminAuth, superAdminOnly, async (req, res) => {
   const allowed = ['restaurant_name', 'tagline']
-  const updates = Object.entries(req.body).filter(([k]) => allowed.includes(k))
+  const updates = Object.entries(req.body).filter(([k, v]) => allowed.includes(k) && String(v ?? '').trim() !== '')
   for (const [k, v] of updates) await upsertSetting(k, String(v).trim().slice(0, 200))
   res.json(await getSettings())
 })
