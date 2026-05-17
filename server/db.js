@@ -192,18 +192,23 @@ export async function getCustomers({ limit = 50, offset = 0, branchId, phone } =
   const params = []
   const where  = []
   if (branchId) {
-    // Only customers who have at least one order placed with this branch
-    where.push(`id IN (SELECT DISTINCT customer_id FROM orders WHERE branch_id=$${params.length + 1} AND customer_id IS NOT NULL)`)
+    where.push(`c.id IN (SELECT DISTINCT customer_id FROM orders WHERE branch_id=$${params.length + 1} AND customer_id IS NOT NULL)`)
     params.push(branchId)
   }
   if (phone) {
-    where.push(`phone ILIKE $${params.length + 1}`)
+    where.push(`c.phone ILIKE $${params.length + 1}`)
     params.push(`%${phone.replace(/%/g, '\\%').replace(/_/g, '\\_')}%`)
   }
   const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : ''
   params.push(limit, offset)
   const { rows } = await pool.query(
-    `SELECT * FROM customers ${whereClause} ORDER BY created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    `SELECT c.*, COUNT(o.id)::int AS order_count
+     FROM customers c
+     LEFT JOIN orders o ON o.customer_id = c.id
+     ${whereClause}
+     GROUP BY c.id
+     ORDER BY c.created_at DESC
+     LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params,
   )
   return rows
