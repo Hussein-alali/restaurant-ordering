@@ -182,7 +182,7 @@ async function sendTelegram(orderId, orderNumber, data, branchChatId) {
   if (paymentMethod) lines.push(`الدفع: ${paymentMethod}`)
   if (orderNote)     lines.push(`🗒 <i>${orderNote}</i>`)
   if (deliveryNotes) lines.push(`📝 <i>${deliveryNotes}</i>`)
-  lines.push('', '📦 <b>الأصناف</b>', itemLines, '', `💰 <b>الإجمالي: ${Number(totalPrice) + 15} ج.م</b>`)
+  lines.push('', '📦 <b>الأصناف</b>', itemLines, '', `💰 <b>الإجمالي: ${Number(totalPrice)} ج.م</b>`)
 
   const keyboard = { inline_keyboard: [
     [{ text: '👨‍🍳 جاري التحضير', callback_data: `st:${orderId}:preparing` },

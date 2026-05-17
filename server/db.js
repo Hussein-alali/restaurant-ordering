@@ -257,7 +257,7 @@ export async function createOrder(data) {
 
   const subtotal    = verifiedItems.reduce((s, i) => s + Number(i.price) * Number(i.quantity), 0)
   // Delivery fee is 0 for pickup / dine-in
-  const deliveryFee = (data.serviceType === 'استلام' || data.serviceType === 'داخل المحل') ? 0 : 15
+  const deliveryFee = data.serviceType === 'delivery' ? 15 : 0
 
   const { rows } = await pool.query(
     `INSERT INTO orders
